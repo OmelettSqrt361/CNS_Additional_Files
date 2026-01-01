@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Diagnostics;
 using System.Collections.Immutable;
+using System.IO;
 
 namespace ValueIteration2
 {
@@ -32,12 +33,14 @@ namespace ValueIteration2
 
         static void Main()
         {
-            // Test
+            // Počáteční hodnoty
             var startState = new GameState(new int[] { 0, 0, 0, 0}, new int[] { 0, 0, 0, 0}, 1);
             Console.WriteLine($"Start: {startState}");
-            Console.ReadLine();
+            Console.WriteLine($"[{string.Join(",", legalActions(startState))}]");
 
+            Console.ReadLine();
             var inStopwatch = Stopwatch.StartNew();
+
             // Inicializace V
             transitionCache = new Dictionary<(GameState, int), List<Transition>>();
             actionCache = new Dictionary<GameState, int[]>();
@@ -49,13 +52,16 @@ namespace ValueIteration2
             {
                 V[state] = 0.0f;
             }
+
+
             inStopwatch.Stop();
             initializationTime = (int)inStopwatch.ElapsedMilliseconds;
             Console.WriteLine($"Time: {initializationTime}");
             Console.ReadLine();
-
             inStopwatch.Reset();
             inStopwatch.Start();
+
+
             // Iterace Hodnot
             Console.Clear();
             Console.WriteLine("Iterace hodnot \n");
@@ -65,10 +71,10 @@ namespace ValueIteration2
             iterationTime = (int)inStopwatch.ElapsedMilliseconds;
             Console.WriteLine($"Time: {iterationTime}");
             Console.ReadLine();
-
-
             inStopwatch.Reset();
             inStopwatch.Start();
+
+
             //Vypsání optimální akce
             Console.Clear();
             Console.WriteLine("Nalezená strategie \n");
@@ -110,7 +116,7 @@ namespace ValueIteration2
             for (int i = 0; i < state.MyFigs.Length; i++)
             {
                 int current = Math.Min(state.MyFigs[i] + state.Dice, p1.Length - 1);
-                if (!(state.MyFigs.Contains(current) && current != p1.Length - 1))
+                if (!(state.MyFigs.Contains(current) && current != p1.Length - 1) && state.MyFigs[i] != p1.Length-1)
                 {
                     resList.Add(i);
                 }
@@ -166,7 +172,7 @@ namespace ValueIteration2
             for (int i = 0; i < state.OppFigs.Length; i++)
             {
                 int current = Math.Min(state.OppFigs[i] + state.Dice, p2.Length - 1);
-                if (!(state.OppFigs.Contains(current) && current != p2.Length - 1))
+                if (!(state.MyFigs.Contains(current) && current != p2.Length - 1) && state.OppFigs[i] != p2.Length - 1)
                 {
                     legal.Add(i);
                 }
@@ -241,6 +247,7 @@ namespace ValueIteration2
             {
                 return 0.0f;
             }
+            
         }
 
         static bool isTerminal(GameState state)
@@ -256,8 +263,16 @@ namespace ValueIteration2
 
             for (int i = 1; i < diceSize + 1; i++)
             {
-                visited.Add(new GameState(start.MyFigs.ToArray(), start.OppFigs.ToArray(), i));
-                queue.Enqueue(new GameState(start.MyFigs.ToArray(), start.OppFigs.ToArray(), i));
+                GameState startState = new GameState(start.MyFigs.ToArray(), start.OppFigs.ToArray(), i);
+                visited.Add(startState);
+                queue.Enqueue(startState);
+
+                foreach (var nextState in oppRngPolicy(startState))
+                {
+                    visited.Add(nextState.State);
+                    queue.Enqueue(nextState.State);
+                }
+
             }
 
             int iteration = 0;
@@ -328,7 +343,6 @@ namespace ValueIteration2
                 var stopwatch = Stopwatch.StartNew();
 
                 Dictionary<GameState, double> tempV = new Dictionary<GameState, double>();
-
                 foreach (var s in states)
                 {
                     double oldV = V[s];
