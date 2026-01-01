@@ -1,0 +1,7 @@
+C:\Users\jakub\OneDrive\Plocha\Člověče nezlob se\Programy\ValueIteration_SOC\ValueIteration_SOC\bin\Debug\ValueIteration_SOC.exe.config
+C:\Users\jakub\OneDrive\Plocha\Člověče nezlob se\Programy\ValueIteration_SOC\ValueIteration_SOC\bin\Debug\ValueIteration_SOC.exe
+C:\Users\jakub\OneDrive\Plocha\Člověče nezlob se\Programy\ValueIteration_SOC\ValueIteration_SOC\bin\Debug\ValueIteration_SOC.pdb
+C:\Users\jakub\OneDrive\Plocha\Člověče nezlob se\Programy\ValueIteration_SOC\ValueIteration_SOC\obj\Debug\ValueIteration_SOC.csproj.AssemblyReference.cache
+C:\Users\jakub\OneDrive\Plocha\Člověče nezlob se\Programy\ValueIteration_SOC\ValueIteration_SOC\obj\Debug\ValueIteration_SOC.csproj.CoreCompileInputs.cache
+C:\Users\jakub\OneDrive\Plocha\Člověče nezlob se\Programy\ValueIteration_SOC\ValueIteration_SOC\obj\Debug\ValueIteration_SOC.exe
+C:\Users\jakub\OneDrive\Plocha\Člověče nezlob se\Programy\ValueIteration_SOC\ValueIteration_SOC\obj\Debug\ValueIteration_SOC.pdb

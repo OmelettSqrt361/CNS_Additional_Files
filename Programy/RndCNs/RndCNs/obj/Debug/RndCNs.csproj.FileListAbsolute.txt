@@ -1,0 +1,7 @@
+C:\Users\jakub\source\repos\RndCNs\RndCNs\obj\Debug\RndCNs.csproj.AssemblyReference.cache
+C:\Users\jakub\source\repos\RndCNs\RndCNs\obj\Debug\RndCNs.csproj.CoreCompileInputs.cache
+C:\Users\jakub\source\repos\RndCNs\RndCNs\bin\Debug\RndCNs.exe.config
+C:\Users\jakub\source\repos\RndCNs\RndCNs\bin\Debug\RndCNs.exe
+C:\Users\jakub\source\repos\RndCNs\RndCNs\bin\Debug\RndCNs.pdb
+C:\Users\jakub\source\repos\RndCNs\RndCNs\obj\Debug\RndCNs.exe
+C:\Users\jakub\source\repos\RndCNs\RndCNs\obj\Debug\RndCNs.pdb

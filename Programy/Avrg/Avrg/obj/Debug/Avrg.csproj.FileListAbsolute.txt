@@ -1,0 +1,7 @@
+C:\Users\jakub\source\repos\Avrg\Avrg\bin\Debug\Avrg.exe.config
+C:\Users\jakub\source\repos\Avrg\Avrg\bin\Debug\Avrg.exe
+C:\Users\jakub\source\repos\Avrg\Avrg\bin\Debug\Avrg.pdb
+C:\Users\jakub\source\repos\Avrg\Avrg\obj\Debug\Avrg.csproj.AssemblyReference.cache
+C:\Users\jakub\source\repos\Avrg\Avrg\obj\Debug\Avrg.csproj.CoreCompileInputs.cache
+C:\Users\jakub\source\repos\Avrg\Avrg\obj\Debug\Avrg.exe
+C:\Users\jakub\source\repos\Avrg\Avrg\obj\Debug\Avrg.pdb

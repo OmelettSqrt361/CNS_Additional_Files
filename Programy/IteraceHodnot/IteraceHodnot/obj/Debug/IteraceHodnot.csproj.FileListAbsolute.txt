@@ -1,0 +1,7 @@
+C:\Users\jakub\OneDrive\Plocha\Člověče nezlob se\Programy\IteraceHodnot\IteraceHodnot\bin\Debug\IteraceHodnot.exe.config
+C:\Users\jakub\OneDrive\Plocha\Člověče nezlob se\Programy\IteraceHodnot\IteraceHodnot\bin\Debug\IteraceHodnot.exe
+C:\Users\jakub\OneDrive\Plocha\Člověče nezlob se\Programy\IteraceHodnot\IteraceHodnot\bin\Debug\IteraceHodnot.pdb
+C:\Users\jakub\OneDrive\Plocha\Člověče nezlob se\Programy\IteraceHodnot\IteraceHodnot\obj\Debug\IteraceHodnot.csproj.AssemblyReference.cache
+C:\Users\jakub\OneDrive\Plocha\Člověče nezlob se\Programy\IteraceHodnot\IteraceHodnot\obj\Debug\IteraceHodnot.csproj.CoreCompileInputs.cache
+C:\Users\jakub\OneDrive\Plocha\Člověče nezlob se\Programy\IteraceHodnot\IteraceHodnot\obj\Debug\IteraceHodnot.exe
+C:\Users\jakub\OneDrive\Plocha\Člověče nezlob se\Programy\IteraceHodnot\IteraceHodnot\obj\Debug\IteraceHodnot.pdb
