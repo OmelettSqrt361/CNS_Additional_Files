@@ -6,6 +6,9 @@ using System.Threading.Tasks;
 using System.Diagnostics;
 using System.Collections.Immutable;
 using System.IO;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using System.IO;
 
 namespace ValueIteration2
 {
@@ -13,8 +16,8 @@ namespace ValueIteration2
     {
         // Parametry stavového prostoru
         static int diceSize = 2;
-        static int[] p1 = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
-        static int[] p2 = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 11};
+        static int[] p1 = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14};
+        static int[] p2 = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 15};
 
         // Diagnostic Data
         static int initializationTime;
@@ -26,6 +29,7 @@ namespace ValueIteration2
         static Dictionary<GameState, double> V = new Dictionary<GameState, double>();
         static double gamma = 0.95f;
         static double epsilon = 1e-6;
+        static string filepath = @"C:\Users\jakub\OneDrive\Plocha\Člověče nezlob se\CNS_Additional_Files\Strategie\strategie1.json";
 
         //Caching
         static Dictionary<(GameState, int), List<Transition>> transitionCache;
@@ -34,7 +38,7 @@ namespace ValueIteration2
         static void Main()
         {
             // Počáteční hodnoty
-            var startState = new GameState(new int[] { 0, 0, 0, 0}, new int[] { 0, 0, 0, 0}, 1);
+            var startState = new GameState(new int[] { 0, 0, 0, 0, 0, 0, 0}, new int[] { 0, 0, 0, 0, 0, 0, 0 }, 1);
             Console.WriteLine($"Start: {startState}");
             Console.WriteLine($"[{string.Join(",", legalActions(startState))}]");
 
@@ -78,7 +82,7 @@ namespace ValueIteration2
             //Vypsání optimální akce
             Console.Clear();
             Console.WriteLine("Nalezená strategie \n");
-            PrintGameStateDictionary(optimalPolicyGen(allStates));
+            SavePolicy(optimalPolicyGen(allStates), filepath);
 
             inStopwatch.Stop();
             writeoutTime = (int)inStopwatch.ElapsedMilliseconds;
@@ -172,7 +176,7 @@ namespace ValueIteration2
             for (int i = 0; i < state.OppFigs.Length; i++)
             {
                 int current = Math.Min(state.OppFigs[i] + state.Dice, p2.Length - 1);
-                if (!(state.MyFigs.Contains(current) && current != p2.Length - 1) && state.OppFigs[i] != p2.Length - 1)
+                if (!(state.OppFigs.Contains(current) && current != p2.Length - 1) && state.OppFigs[i] != p2.Length - 1)
                 {
                     legal.Add(i);
                 }
@@ -407,6 +411,22 @@ namespace ValueIteration2
                 int value = kvp.Value;
                 Console.WriteLine($"{state} => {value}");
             }
+
+        }
+
+        static void SavePolicy(Dictionary<GameState, int> policy, string filePath)
+        {
+            // Convert GameState keys to string
+            var dictToSave = policy.ToDictionary(
+                kvp => kvp.Key.ToString(),  // string key
+                kvp => kvp.Value
+            );
+
+            // Serialize to JSON
+            var options = new JsonSerializerOptions { WriteIndented = true };
+            string json = JsonSerializer.Serialize(dictToSave, options);
+
+            File.WriteAllText(filePath, json);
         }
 
     }
