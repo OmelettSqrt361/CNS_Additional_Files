@@ -1,0 +1,7 @@
+C:\Users\jakub\OneDrive\Plocha\Člověče nezlob se\CNS_Additional_Files\Programy\ValueIteration2\ValueIteration2\ValueIteration2\bin\Debug\ValueIteration2.exe.config
+C:\Users\jakub\OneDrive\Plocha\Člověče nezlob se\CNS_Additional_Files\Programy\ValueIteration2\ValueIteration2\ValueIteration2\bin\Debug\ValueIteration2.exe
+C:\Users\jakub\OneDrive\Plocha\Člověče nezlob se\CNS_Additional_Files\Programy\ValueIteration2\ValueIteration2\ValueIteration2\bin\Debug\ValueIteration2.pdb
+C:\Users\jakub\OneDrive\Plocha\Člověče nezlob se\CNS_Additional_Files\Programy\ValueIteration2\ValueIteration2\ValueIteration2\obj\Debug\ValueIteration2.csproj.AssemblyReference.cache
+C:\Users\jakub\OneDrive\Plocha\Člověče nezlob se\CNS_Additional_Files\Programy\ValueIteration2\ValueIteration2\ValueIteration2\obj\Debug\ValueIteration2.csproj.CoreCompileInputs.cache
+C:\Users\jakub\OneDrive\Plocha\Člověče nezlob se\CNS_Additional_Files\Programy\ValueIteration2\ValueIteration2\ValueIteration2\obj\Debug\ValueIteration2.exe
+C:\Users\jakub\OneDrive\Plocha\Člověče nezlob se\CNS_Additional_Files\Programy\ValueIteration2\ValueIteration2\ValueIteration2\obj\Debug\ValueIteration2.pdb
