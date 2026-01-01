@@ -4,15 +4,16 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Diagnostics;
+using System.Collections.Immutable;
 
 namespace ValueIteration2
 {
     class Program
     {
+        // Parametry stavového prostoru
         static int diceSize = 2;
         static int[] p1 = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
         static int[] p2 = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 11};
-
 
         // Diagnostic Data
         static int initializationTime;
@@ -20,21 +21,27 @@ namespace ValueIteration2
         static int writeoutTime;
         static int numOfIter;
 
+        // Parametry Iterace Hodnot
+        static Dictionary<GameState, double> V = new Dictionary<GameState, double>();
         static double gamma = 0.95f;
         static double epsilon = 1e-6;
-        static Dictionary<GameState, double> V = new Dictionary<GameState, double>();
+
+        //Caching
+        static Dictionary<(GameState, int), List<Transition>> transitionCache;
+        static Dictionary<GameState, int[]> actionCache;
 
         static void Main()
         {
             // Test
             var startState = new GameState(new int[] { 0, 0, 0, 0}, new int[] { 0, 0, 0, 0}, 1);
             Console.WriteLine($"Start: {startState}");
-            Console.WriteLine($"legal:[{string.Join(",", legalActions(startState))}]");
             Console.ReadLine();
-
 
             var inStopwatch = Stopwatch.StartNew();
             // Inicializace V
+            transitionCache = new Dictionary<(GameState, int), List<Transition>>();
+            actionCache = new Dictionary<GameState, int[]>();
+
             Console.Clear();
             Console.WriteLine("Hledání všech stavů a inicializace \n");
             HashSet<GameState> allStates = searchAllStates(startState);
@@ -42,8 +49,6 @@ namespace ValueIteration2
             {
                 V[state] = 0.0f;
             }
-            PrintAllStates(allStates);
-
             inStopwatch.Stop();
             initializationTime = (int)inStopwatch.ElapsedMilliseconds;
             Console.WriteLine($"Time: {initializationTime}");
@@ -116,7 +121,6 @@ namespace ValueIteration2
                 resList.Add(-1);
             }
 
-
             return resList.ToArray();
         }
 
@@ -128,13 +132,13 @@ namespace ValueIteration2
             {
                 for (int i = 1; i < diceSize + 1; i++)
                 {
-                    result.Add(new Transition(new GameState(state.MyFigs, state.OppFigs, i), 1 / (double)diceSize));
+                    result.Add(new Transition(new GameState(state.MyFigs.ToArray(), state.OppFigs.ToArray(), i), 1 / (double)diceSize));
                 }
                 return result;
             }
 
-            int[] newFigs = (int[])state.MyFigs.Clone();
-            int[] newOpps = (int[])state.OppFigs.Clone();
+            int[] newFigs = state.MyFigs.ToArray();
+            int[] newOpps = state.OppFigs.ToArray();
 
             newFigs[action] = Math.Min(state.MyFigs[action] + state.Dice, p1.Length - 1);
             for (int i = 0; i < newOpps.Length; i++)
@@ -171,14 +175,14 @@ namespace ValueIteration2
             List<Transition> diceless = new List<Transition>();
             if (legal.Count == 0)
             {
-                diceless.Add(new Transition(new GameState(state.MyFigs, state.OppFigs, -1), 1.0));
+                diceless.Add(new Transition(new GameState(state.MyFigs.ToArray(), state.OppFigs.ToArray(), -1), 1.0));
             }
             else
             {
                 foreach (var action in legal)
                 {
-                    int[] newFigs = (int[])state.MyFigs.Clone();
-                    int[] newOpps = (int[])state.OppFigs.Clone();
+                    int[] newFigs = state.MyFigs.ToArray();
+                    int[] newOpps = state.OppFigs.ToArray();
                     newOpps[action] = Math.Min(state.OppFigs[action] + state.Dice, p2.Length - 1);
                     for (int i = 0; i < newFigs.Length; i++)
                     {
@@ -197,7 +201,7 @@ namespace ValueIteration2
             {
                 for (int i = 1; i < diceSize + 1; i++)
                 {
-                    diced.Add(new Transition(new GameState(transition.State.MyFigs, transition.State.OppFigs, i), transition.Probability / (double)diceSize));
+                    diced.Add(new Transition(new GameState(transition.State.MyFigs.ToArray(), transition.State.OppFigs.ToArray(), i), transition.Probability / (double)diceSize));
                 }
             }
             return diced;
@@ -252,22 +256,37 @@ namespace ValueIteration2
 
             for (int i = 1; i < diceSize + 1; i++)
             {
-                visited.Add(new GameState(start.MyFigs, start.OppFigs, i));
-                queue.Enqueue(new GameState(start.MyFigs, start.OppFigs, i));
+                visited.Add(new GameState(start.MyFigs.ToArray(), start.OppFigs.ToArray(), i));
+                queue.Enqueue(new GameState(start.MyFigs.ToArray(), start.OppFigs.ToArray(), i));
             }
 
             int iteration = 0;
             while (queue.Count > 0)
             {
                 iteration++;
-                Console.WriteLine(iteration);
+                if(iteration % 1000 == 0)
+                {
+                    Console.WriteLine(iteration);
+                }
                 var s = queue.Dequeue();
 
-                if (isTerminal(s)) continue;
+                var legal = legalActions(s);
+                actionCache[s] = legal;
 
-                foreach (int action in legalActions(s))
+                if (isTerminal(s)) 
                 {
-                    foreach (var t in nextStates(s, action))
+                    var next = nextStates(s, -1);
+                    transitionCache[(s, -1)] = next;
+                    continue;
+                } 
+
+                foreach (int action in legal)
+                {
+                    var next = nextStates(s, action);
+
+                    transitionCache[(s, action)] = next;
+
+                    foreach (var t in next)
                     {
                         if (!visited.Contains(t.State))
                         {
@@ -277,7 +296,7 @@ namespace ValueIteration2
                     }
                 }
             }
-
+            Console.WriteLine(iteration);
             return visited;
         }
 
@@ -285,10 +304,10 @@ namespace ValueIteration2
         {
             double best = double.NegativeInfinity;
 
-            foreach (int action in legalActions(state))
+            foreach (int action in actionCache[state])
             {
                 double q = 0.0f;
-                foreach (var t in nextStates(state, action))
+                foreach (var t in transitionCache[(state, action)])
                 {
                     q += t.Probability * (reward(t.State) + gamma * V[t.State]);
                 }
@@ -325,9 +344,10 @@ namespace ValueIteration2
                 iteration++;
                 Console.WriteLine($"Iteration:{iteration}, MaxDelta:{delta}, Elapsed Time: {stopwatch.ElapsedMilliseconds}");
 
-                if (delta < epsilon)
+                if (delta < epsilon) {
                     numOfIter = iteration;
                     break;
+                }
             }
 
 
@@ -338,11 +358,11 @@ namespace ValueIteration2
             double best = double.NegativeInfinity;
             int bestAction = -1;
 
-            foreach (int action in legalActions(state))
+            foreach (int action in actionCache[state])
             {
                 double q = 0.0;
 
-                foreach (var t in nextStates(state, action))
+                foreach (var t in transitionCache[(state,action)])
                 {
                     q += t.Probability * (reward(t.State) + gamma * V[t.State]);
                 }
@@ -375,7 +395,6 @@ namespace ValueIteration2
             }
         }
 
-
     }
 
     public struct GameState : IEquatable<GameState>
@@ -383,32 +402,30 @@ namespace ValueIteration2
         // Inicializace potřebných proměnných
         // Proměnné MyFigs a OppFigs obsahují pouze "imaginární" hodnotu pole,
         // skutečné pole najdeme v array p1 nebo p2 jako p1[MyFigs[i]] nebo p2[OppFigs[i]]
-        public readonly int[] MyFigs;
-        public readonly int[] OppFigs;
+        public readonly ImmutableArray<int> MyFigs;
+        public readonly ImmutableArray<int> OppFigs;
         public readonly int Dice;
 
         public GameState(int[] myPieces, int[] oppPieces, int dice)
         {
-            MyFigs = (int[])myPieces.Clone(); // prevent external mutation
-            OppFigs = (int[])oppPieces.Clone();
+            MyFigs = ImmutableArray.Create(myPieces).OrderBy(x => x).ToImmutableArray();
+            OppFigs = ImmutableArray.Create(oppPieces).OrderBy(x => x).ToImmutableArray();
             Dice = dice;
         }
 
         //Porovnávání stavů
         public bool Equals(GameState other)
         {
-            if (MyFigs.Length != other.MyFigs.Length) return false;
-            if (OppFigs.Length != other.OppFigs.Length) return false;
+            return MyFigs.SequenceEqual(other.MyFigs)
+            && OppFigs.SequenceEqual(other.OppFigs)
+            && Dice == other.Dice;
+        }
 
-            for (int i = 0; i < MyFigs.Length; i++)
-                if (MyFigs[i] != other.MyFigs[i]) return false;
-
-            for (int i = 0; i < OppFigs.Length; i++)
-                if (OppFigs[i] != other.OppFigs[i]) return false;
-
-            if (Dice != other.Dice) return false;
-
-            return true;
+        public override bool Equals(object obj)
+        {
+            if (obj is GameState other)
+                return Equals(other);
+            return false;
         }
 
         public override string ToString()

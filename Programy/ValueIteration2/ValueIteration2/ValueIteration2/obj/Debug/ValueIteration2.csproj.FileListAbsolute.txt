@@ -5,3 +5,14 @@ C:\Users\jakub\OneDrive\Plocha\Člověče nezlob se\CNS_Additional_Files\Program
 C:\Users\jakub\OneDrive\Plocha\Člověče nezlob se\CNS_Additional_Files\Programy\ValueIteration2\ValueIteration2\ValueIteration2\obj\Debug\ValueIteration2.csproj.CoreCompileInputs.cache
 C:\Users\jakub\OneDrive\Plocha\Člověče nezlob se\CNS_Additional_Files\Programy\ValueIteration2\ValueIteration2\ValueIteration2\obj\Debug\ValueIteration2.exe
 C:\Users\jakub\OneDrive\Plocha\Člověče nezlob se\CNS_Additional_Files\Programy\ValueIteration2\ValueIteration2\ValueIteration2\obj\Debug\ValueIteration2.pdb
+C:\Users\jakub\OneDrive\Plocha\Člověče nezlob se\CNS_Additional_Files\Programy\ValueIteration2\ValueIteration2\ValueIteration2\bin\Debug\System.Buffers.dll
+C:\Users\jakub\OneDrive\Plocha\Člověče nezlob se\CNS_Additional_Files\Programy\ValueIteration2\ValueIteration2\ValueIteration2\bin\Debug\System.Collections.Immutable.dll
+C:\Users\jakub\OneDrive\Plocha\Člověče nezlob se\CNS_Additional_Files\Programy\ValueIteration2\ValueIteration2\ValueIteration2\bin\Debug\System.Memory.dll
+C:\Users\jakub\OneDrive\Plocha\Člověče nezlob se\CNS_Additional_Files\Programy\ValueIteration2\ValueIteration2\ValueIteration2\bin\Debug\System.Numerics.Vectors.dll
+C:\Users\jakub\OneDrive\Plocha\Člověče nezlob se\CNS_Additional_Files\Programy\ValueIteration2\ValueIteration2\ValueIteration2\bin\Debug\System.Runtime.CompilerServices.Unsafe.dll
+C:\Users\jakub\OneDrive\Plocha\Člověče nezlob se\CNS_Additional_Files\Programy\ValueIteration2\ValueIteration2\ValueIteration2\bin\Debug\System.Buffers.xml
+C:\Users\jakub\OneDrive\Plocha\Člověče nezlob se\CNS_Additional_Files\Programy\ValueIteration2\ValueIteration2\ValueIteration2\bin\Debug\System.Collections.Immutable.xml
+C:\Users\jakub\OneDrive\Plocha\Člověče nezlob se\CNS_Additional_Files\Programy\ValueIteration2\ValueIteration2\ValueIteration2\bin\Debug\System.Memory.xml
+C:\Users\jakub\OneDrive\Plocha\Člověče nezlob se\CNS_Additional_Files\Programy\ValueIteration2\ValueIteration2\ValueIteration2\bin\Debug\System.Numerics.Vectors.xml
+C:\Users\jakub\OneDrive\Plocha\Člověče nezlob se\CNS_Additional_Files\Programy\ValueIteration2\ValueIteration2\ValueIteration2\bin\Debug\System.Runtime.CompilerServices.Unsafe.xml
+C:\Users\jakub\OneDrive\Plocha\Člověče nezlob se\CNS_Additional_Files\Programy\ValueIteration2\ValueIteration2\ValueIteration2\obj\Debug\ValueIteration2.csproj.CopyComplete
