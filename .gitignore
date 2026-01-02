@@ -1,0 +1,41 @@
+# Visual Studio / .NET
+.vs/
+bin/
+obj/
+Debug/
+Release/
+*.user
+*.suo
+*.userprefs
+*.csproj.user
+*.ide
+
+# Rider
+.idea/
+*.sln.iml
+
+# Mono
+*.pidb
+*.booproj
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Logs and temporary files
+*.log
+*.tmp
+*.cache
+*.bak
+*.swp
+
+# NuGet
+*.nupkg
+packages/
+.nuget/
+
+# Dotnet tools
+*.dotnet_tool.json
+
+# Ignore node_modules in case you mix JS
+node_modules/
