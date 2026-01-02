@@ -16,8 +16,8 @@ namespace ValueIteration2
     {
         // Parametry stavového prostoru
         static int diceSize = 2;
-        static int[] p1 = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14};
-        static int[] p2 = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 15};
+        static int[] p1 = { 0, 1, 2, 3, 4, 5, 6, 7};
+        static int[] p2 = { 8, 1, 2, 3, 4, 5, 6, 9};
 
         // Diagnostic Data
         static int initializationTime;
@@ -28,8 +28,8 @@ namespace ValueIteration2
         // Parametry Iterace Hodnot
         static Dictionary<GameState, double> V = new Dictionary<GameState, double>();
         static double gamma = 0.95f;
-        static double epsilon = 1e-6;
-        static string filepath = @"C:\Users\jakub\OneDrive\Plocha\Člověče nezlob se\CNS_Additional_Files\Strategie\strategie1.json";
+        static double epsilon = 10;
+        static string filepath = @"C:\Users\jakub\OneDrive\Plocha\Člověče nezlob se\CNS_Additional_Files\Strategie\cara7_valueIterationVSRng.json";
 
         //Caching
         static Dictionary<(GameState, int), List<Transition>> transitionCache;
@@ -38,7 +38,7 @@ namespace ValueIteration2
         static void Main()
         {
             // Počáteční hodnoty
-            var startState = new GameState(new int[] { 0, 0, 0, 0, 0, 0, 0}, new int[] { 0, 0, 0, 0, 0, 0, 0 }, 1);
+            var startState = new GameState(new int[] { 0, 0 }, new int[] { 0, 0 }, 1);
             Console.WriteLine($"Start: {startState}");
             Console.WriteLine($"[{string.Join(",", legalActions(startState))}]");
 
@@ -464,9 +464,9 @@ namespace ValueIteration2
 
         public override string ToString()
         {
-            return $"P1:[{string.Join(",", MyFigs)}]," +
-           $"P2:[{string.Join(",", OppFigs)}]," +
-           $"D:{Dice}";
+            return $"[{string.Join(",", MyFigs)}]," +
+           $"[{string.Join(",", OppFigs)}]," +
+           $"{Dice}";
         }
 
         public override int GetHashCode()
@@ -495,9 +495,9 @@ namespace ValueIteration2
 
         public override string ToString()
         {
-            return $"P1:[{string.Join(",", State.MyFigs)}]," +
-            $"P2:[{string.Join(",", State.OppFigs)}]," +
-            $"D:{State.Dice},Prob:{Probability}";
+            return $"[{string.Join(",", State.MyFigs)}]," +
+            $"[{string.Join(",", State.OppFigs)}]," +
+            $"{State.Dice},Prob:{Probability}";
         }
     }
 }

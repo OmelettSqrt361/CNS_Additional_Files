@@ -1,0 +1,10 @@
+C:\Users\jakub\OneDrive\Plocha\Člověče nezlob se\CNS_Additional_Files\Programy\DistanceMetric\DistanceMetric\bin\Debug\DistanceMetric.exe.config
+C:\Users\jakub\OneDrive\Plocha\Člověče nezlob se\CNS_Additional_Files\Programy\DistanceMetric\DistanceMetric\bin\Debug\DistanceMetric.exe
+C:\Users\jakub\OneDrive\Plocha\Člověče nezlob se\CNS_Additional_Files\Programy\DistanceMetric\DistanceMetric\bin\Debug\DistanceMetric.pdb
+C:\Users\jakub\OneDrive\Plocha\Člověče nezlob se\CNS_Additional_Files\Programy\DistanceMetric\DistanceMetric\bin\Debug\MathNet.Numerics.dll
+C:\Users\jakub\OneDrive\Plocha\Člověče nezlob se\CNS_Additional_Files\Programy\DistanceMetric\DistanceMetric\bin\Debug\MathNet.Numerics.xml
+C:\Users\jakub\OneDrive\Plocha\Člověče nezlob se\CNS_Additional_Files\Programy\DistanceMetric\DistanceMetric\obj\Debug\DistanceMetric.csproj.AssemblyReference.cache
+C:\Users\jakub\OneDrive\Plocha\Člověče nezlob se\CNS_Additional_Files\Programy\DistanceMetric\DistanceMetric\obj\Debug\DistanceMetric.csproj.CoreCompileInputs.cache
+C:\Users\jakub\OneDrive\Plocha\Člověče nezlob se\CNS_Additional_Files\Programy\DistanceMetric\DistanceMetric\obj\Debug\DistanceMetric.csproj.CopyComplete
+C:\Users\jakub\OneDrive\Plocha\Člověče nezlob se\CNS_Additional_Files\Programy\DistanceMetric\DistanceMetric\obj\Debug\DistanceMetric.exe
+C:\Users\jakub\OneDrive\Plocha\Člověče nezlob se\CNS_Additional_Files\Programy\DistanceMetric\DistanceMetric\obj\Debug\DistanceMetric.pdb

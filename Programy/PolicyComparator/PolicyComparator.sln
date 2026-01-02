@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.36602.28
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PolicyComparator", "PolicyComparator\PolicyComparator.csproj", "{1F1CF06A-4FAA-4B1E-8476-86833A917C26}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{1F1CF06A-4FAA-4B1E-8476-86833A917C26}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1F1CF06A-4FAA-4B1E-8476-86833A917C26}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1F1CF06A-4FAA-4B1E-8476-86833A917C26}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1F1CF06A-4FAA-4B1E-8476-86833A917C26}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {DA70E578-876C-4ED4-867C-7DDB061365A4}
+	EndGlobalSection
+EndGlobal
