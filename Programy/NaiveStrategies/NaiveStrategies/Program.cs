@@ -26,7 +26,8 @@ namespace NaiveStrategies
         static Dictionary<GameState, double> V = new Dictionary<GameState, double>();
         static double gamma = 0.95f;
         static double epsilon = 10;
-        static string filepath = @"C:\Users\jakub\OneDrive\Plocha\Člověče nezlob se\CNS_Additional_Files\Strategie\cara7_depthSearch5.json";
+        static string filepath = @"C:\Users\jakub\OneDrive\Plocha\Člověče nezlob se\CNS_Additional_Files\Strategie\";
+        static string nameOfGame = "cara7_";
 
         //Caching
         static Dictionary<(GameState, int), List<Transition>> transitionCache;
@@ -35,7 +36,7 @@ namespace NaiveStrategies
         static void Main()
         {
             // Počáteční hodnoty
-            var startState = new GameState(new int[] { 0, 0 }, new int[] { 0, 0 }, 1);
+            var startState = new GameState(new int[] { 4, 5 }, new int[] { 3, 7 }, 1);
             Console.WriteLine($"Naive start: {startState}");
             Console.WriteLine($"[{string.Join(",", legalActions(startState))}]");
 
@@ -51,8 +52,26 @@ namespace NaiveStrategies
 
             //Vypsání vybrané akce
             Console.Clear();
-            Console.WriteLine("Nalezená strategie \n");
-            SavePolicy(minimaxPolicyGen(allStates,5), filepath);
+            Console.WriteLine("Bullet \n");
+            SavePolicy(bulletPolicyGen(allStates), filepath+nameOfGame+"bullet"+".json");
+            Console.WriteLine("Hotovo");
+            Console.WriteLine("Bullet+ \n");
+            SavePolicy(bulletPlusPolicyGen(allStates), filepath + nameOfGame + "bulletPlus" + ".json");
+            Console.WriteLine("Hotovo");
+            Console.WriteLine("Raid \n");
+            SavePolicy(raidPolicyGen(allStates), filepath + nameOfGame + "raid" + ".json");
+            Console.WriteLine("Hotovo");
+            Console.WriteLine("Raid+ \n");
+            SavePolicy(raidPolicyGen(allStates), filepath + nameOfGame + "raidPlus" + ".json");
+            Console.WriteLine("Hotovo");
+            Console.WriteLine("SimpleScore \n");
+            SavePolicy(scoreBasedPolicyGen(allStates), filepath + nameOfGame + "simpleScore" + ".json");
+            Console.WriteLine("Hotovo");
+            Console.WriteLine("Depth3 \n");
+            SavePolicy(minimaxPolicyGen(allStates,3), filepath + nameOfGame + "depth3" + ".json");
+            Console.WriteLine("Hotovo");
+            Console.WriteLine("Depth5 \n");
+            SavePolicy(minimaxPolicyGen(allStates, 5), filepath + nameOfGame + "depth5" + ".json");
             Console.WriteLine("Hotovo");
             Console.ReadLine();
         }
@@ -231,8 +250,10 @@ namespace NaiveStrategies
 
                 foreach (var nextState in oppRngPolicy(startState))
                 {
-                    visited.Add(nextState.State);
-                    queue.Enqueue(nextState.State);
+                    GameState swapState = new GameState(nextState.State.OppFigs.ToArray(), nextState.State.MyFigs.ToArray(), nextState.State.Dice);
+
+                    visited.Add(swapState);
+                    queue.Enqueue(swapState);
                 }
 
             }
@@ -732,8 +753,8 @@ namespace NaiveStrategies
 
         public override string ToString()
         {
-            return $"[{string.Join(",", MyFigs)}]," +
-           $"[{string.Join(",", OppFigs)}]," +
+            return $"[{string.Join(",", MyFigs)}];" +
+           $"[{string.Join(",", OppFigs)}];" +
            $"{Dice}";
         }
 

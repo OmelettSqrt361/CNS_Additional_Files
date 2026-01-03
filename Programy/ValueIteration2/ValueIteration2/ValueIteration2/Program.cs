@@ -28,8 +28,8 @@ namespace ValueIteration2
         // Parametry Iterace Hodnot
         static Dictionary<GameState, double> V = new Dictionary<GameState, double>();
         static double gamma = 0.95f;
-        static double epsilon = 10;
-        static string filepath = @"C:\Users\jakub\OneDrive\Plocha\Člověče nezlob se\CNS_Additional_Files\Strategie\cara7_valueIterationVSRng.json";
+        static double epsilon = 50;
+        static string filepath = @"C:\Users\jakub\OneDrive\Plocha\Člověče nezlob se\CNS_Additional_Files\Strategie\cara7_highEps.json";
 
         //Caching
         static Dictionary<(GameState, int), List<Transition>> transitionCache;
@@ -273,8 +273,10 @@ namespace ValueIteration2
 
                 foreach (var nextState in oppRngPolicy(startState))
                 {
-                    visited.Add(nextState.State);
-                    queue.Enqueue(nextState.State);
+                    GameState swapState = new GameState(nextState.State.OppFigs.ToArray(), nextState.State.MyFigs.ToArray(), nextState.State.Dice);
+
+                    visited.Add(swapState);
+                    queue.Enqueue(swapState);
                 }
 
             }
@@ -464,8 +466,8 @@ namespace ValueIteration2
 
         public override string ToString()
         {
-            return $"[{string.Join(",", MyFigs)}]," +
-           $"[{string.Join(",", OppFigs)}]," +
+            return $"[{string.Join(",", MyFigs)}];" +
+           $"[{string.Join(",", OppFigs)}];" +
            $"{Dice}";
         }
 
@@ -495,8 +497,8 @@ namespace ValueIteration2
 
         public override string ToString()
         {
-            return $"[{string.Join(",", State.MyFigs)}]," +
-            $"[{string.Join(",", State.OppFigs)}]," +
+            return $"[{string.Join(",", State.MyFigs)}];" +
+            $"[{string.Join(",", State.OppFigs)}];" +
             $"{State.Dice},Prob:{Probability}";
         }
     }
