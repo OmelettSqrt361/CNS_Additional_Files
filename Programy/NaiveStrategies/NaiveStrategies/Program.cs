@@ -36,7 +36,7 @@ namespace NaiveStrategies
         static void Main()
         {
             // Počáteční hodnoty
-            var startState = new GameState(new int[] { 4, 5 }, new int[] { 3, 7 }, 1);
+            var startState = new GameState(new int[] { 0, 0 }, new int[] { 0, 0 }, 1);
             Console.WriteLine($"Naive start: {startState}");
             Console.WriteLine($"[{string.Join(",", legalActions(startState))}]");
 
@@ -48,29 +48,29 @@ namespace NaiveStrategies
 
             Console.Clear();
             Console.WriteLine("Hledání všech stavů a inicializace \n");
-            HashSet<GameState> allStates = searchAllStates(startState);
+            HashSet<GameState> allStates = searchAllAllStates(startState);
 
             //Vypsání vybrané akce
             Console.Clear();
-            Console.WriteLine("Bullet \n");
+            Console.WriteLine("Bullet");
             SavePolicy(bulletPolicyGen(allStates), filepath+nameOfGame+"bullet"+".json");
-            Console.WriteLine("Hotovo");
-            Console.WriteLine("Bullet+ \n");
+            Console.WriteLine("Hotovo\n");
+            Console.WriteLine("Bullet+");
             SavePolicy(bulletPlusPolicyGen(allStates), filepath + nameOfGame + "bulletPlus" + ".json");
-            Console.WriteLine("Hotovo");
-            Console.WriteLine("Raid \n");
+            Console.WriteLine("Hotovo\n");
+            Console.WriteLine("Raid");
             SavePolicy(raidPolicyGen(allStates), filepath + nameOfGame + "raid" + ".json");
-            Console.WriteLine("Hotovo");
-            Console.WriteLine("Raid+ \n");
+            Console.WriteLine("Hotovo\n");
+            Console.WriteLine("Raid+");
             SavePolicy(raidPolicyGen(allStates), filepath + nameOfGame + "raidPlus" + ".json");
-            Console.WriteLine("Hotovo");
-            Console.WriteLine("SimpleScore \n");
+            Console.WriteLine("Hotovo\n");
+            Console.WriteLine("SimpleScore");
             SavePolicy(scoreBasedPolicyGen(allStates), filepath + nameOfGame + "simpleScore" + ".json");
-            Console.WriteLine("Hotovo");
-            Console.WriteLine("Depth3 \n");
+            Console.WriteLine("Hotovo\n");
+            Console.WriteLine("Depth3");
             SavePolicy(minimaxPolicyGen(allStates,3), filepath + nameOfGame + "depth3" + ".json");
-            Console.WriteLine("Hotovo");
-            Console.WriteLine("Depth5 \n");
+            Console.WriteLine("Hotovo\n");
+            Console.WriteLine("Depth5");
             SavePolicy(minimaxPolicyGen(allStates, 5), filepath + nameOfGame + "depth5" + ".json");
             Console.WriteLine("Hotovo");
             Console.ReadLine();
@@ -145,7 +145,7 @@ namespace NaiveStrategies
         }
 
         // Random Opponent Policy
-        static List<Transition> oppRngPolicy(GameState state)
+        static List<Transition> possiblePlays(GameState state)
         {
 
             List<int> legal = new List<int>();
@@ -204,7 +204,7 @@ namespace NaiveStrategies
                 }
                 else
                 {
-                    foreach (var res in oppRngPolicy(oppsState.State))
+                    foreach (var res in possiblePlays(oppsState.State))
                     {
                         resTrans.Add(new Transition(res.State, res.Probability * oppsState.Probability));
                     }
@@ -248,7 +248,7 @@ namespace NaiveStrategies
                 visited.Add(startState);
                 queue.Enqueue(startState);
 
-                foreach (var nextState in oppRngPolicy(startState))
+                foreach (var nextState in possiblePlays(startState))
                 {
                     GameState swapState = new GameState(nextState.State.OppFigs.ToArray(), nextState.State.MyFigs.ToArray(), nextState.State.Dice);
 
@@ -296,6 +296,67 @@ namespace NaiveStrategies
             }
             Console.WriteLine(iteration);
             return visited;
+        }
+
+        static HashSet<GameState> searchAllAllStates(GameState start)
+        {
+            var allStates = new HashSet<GameState>();
+
+            int myPiecesCount = start.MyFigs.Length;
+            int oppPiecesCount = start.OppFigs.Length;
+            int maxP1 = p1.Length - 1;
+            int maxP2 = p2.Length - 1;
+
+            // Helper to enumerate all positions
+            IEnumerable<int[]> AllPositions(int numPieces, int maxPos)
+            {
+                int[] positions = new int[numPieces];
+                while (true)
+                {
+                    yield return (int[])positions.Clone();
+
+                    int idx = 0;
+                    while (idx < numPieces)
+                    {
+                        positions[idx]++;
+                        if (positions[idx] <= maxPos)
+                            break;
+                        positions[idx] = 0;
+                        idx++;
+                    }
+                    if (idx == numPieces) break;
+                }
+            }
+
+            foreach (var myPos in AllPositions(myPiecesCount, maxP1))
+            {
+                foreach (var oppPos in AllPositions(oppPiecesCount, maxP2))
+                {
+                    for (int dice = 1; dice <= diceSize; dice++)
+                    {
+                        var state = new GameState(myPos, oppPos, dice);
+                        allStates.Add(state);
+                        if (allStates.Count % 1000 == 0)
+                        {
+                            Console.WriteLine(allStates.Count);
+                        }
+                    }
+                }
+            }
+
+            foreach (var state in allStates)
+            {
+                var legal = legalActions(state);
+                actionCache[state] = legal;
+                foreach (var action in legal)
+                {
+                    transitionCache[(state, action)] = nextStates(state, action);
+                }
+
+            }
+            Console.WriteLine(allStates.Count);
+
+            return allStates;
         }
 
         static double BellmanUpdate(GameState state)

@@ -10,14 +10,15 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.IO;
 
-namespace ValueIteration2
+
+namespace ValueIterationVsLibrary
 {
     class Program
     {
         // Parametry stavového prostoru
         static int diceSize = 2;
-        static int[] p1 = { 0, 1, 2, 3, 4, 5, 6, 7};
-        static int[] p2 = { 8, 1, 2, 3, 4, 5, 6, 9};
+        static int[] p1 = { 0, 1, 2, 3, 4, 5, 6, 7 };
+        static int[] p2 = { 8, 1, 2, 3, 4, 5, 6, 9 };
 
         // Diagnostic Data
         static int initializationTime;
@@ -29,11 +30,15 @@ namespace ValueIteration2
         static Dictionary<GameState, double> V = new Dictionary<GameState, double>();
         static double gamma = 0.95f;
         static double epsilon = 1e-9;
-        static string filepath = @"C:\Users\jakub\OneDrive\Plocha\Člověče nezlob se\CNS_Additional_Files\Strategie\cara7_valueIterationVSRng.json";
+        static string filepath = @"C:\Users\jakub\OneDrive\Plocha\Člověče nezlob se\CNS_Additional_Files\Strategie\cara7_bestOnIter.json";
 
         //Caching
         static Dictionary<(GameState, int), List<Transition>> transitionCache;
         static Dictionary<GameState, int[]> actionCache;
+
+        // Načíst strategii
+        static string loadStrat;
+        static Dictionary<GameState, int> antiStrategy;
 
         static void Main()
         {
@@ -41,8 +46,16 @@ namespace ValueIteration2
             var startState = new GameState(new int[] { 0, 0 }, new int[] { 0, 0 }, 1);
             Console.WriteLine($"Start: {startState}");
             Console.WriteLine($"[{string.Join(",", legalActions(startState))}]");
-
             Console.ReadLine();
+
+            // Načítání strategie
+            Console.Clear();
+            Console.WriteLine("Načtěte prosím strategii");
+            loadStrat = Console.ReadLine();
+            antiStrategy = LoadStrategy(loadStrat);
+            Console.WriteLine(antiStrategy.Count());
+            Console.ReadLine();
+
             var inStopwatch = Stopwatch.StartNew();
 
             // Inicializace V
@@ -95,10 +108,11 @@ namespace ValueIteration2
             Console.WriteLine($"Initialization Time\t{initializationTime}");
             Console.WriteLine($"Iteration Time\t{iterationTime}");
             Console.WriteLine($"Writeout Time\t{writeoutTime}");
-            Console.WriteLine($"Sum\t{initializationTime+iterationTime+writeoutTime}");
+            Console.WriteLine($"Sum\t{initializationTime + iterationTime + writeoutTime}");
             Console.WriteLine($"Iterations:\t{numOfIter}");
             Console.ReadLine();
         }
+
 
         static int[] legalActions(GameState state)
         {
@@ -111,12 +125,12 @@ namespace ValueIteration2
             for (int i = 0; i < state.MyFigs.Length; i++)
             {
                 int current = Math.Min(state.MyFigs[i] + state.Dice, p1.Length - 1);
-                if (!(state.MyFigs.Contains(current) && current != p1.Length - 1) && state.MyFigs[i] != p1.Length-1)
+                if (!(state.MyFigs.Contains(current) && current != p1.Length - 1) && state.MyFigs[i] != p1.Length - 1)
                 {
                     resList.Add(i);
                 }
             }
-            if(resList.Count == 0)
+            if (resList.Count == 0)
             {
                 // -1 Značí nulovou akci (nic se neděje)
                 resList.Add(-1);
@@ -159,56 +173,38 @@ namespace ValueIteration2
             return result;
         }
 
-        // Random Opponent Policy
-        static List<Transition> oppRngPolicy(GameState state)
+        static List<Transition> oppLoadedPolicy(GameState state)
         {
 
-            List<int> legal = new List<int>();
-            for (int i = 0; i < state.OppFigs.Length; i++)
+            int action = antiStrategy[state];
+            GameState newState = new GameState(state.MyFigs.ToArray(), state.OppFigs.ToArray(), 0);
+
+            if(action != -1)
             {
-                int current = Math.Min(state.OppFigs[i] + state.Dice, p2.Length - 1);
-                if (!(state.OppFigs.Contains(current) && current != p2.Length - 1) && state.OppFigs[i] != p2.Length - 1)
+                int[] newFigs = state.MyFigs.ToArray();
+                int[] newOpps = state.OppFigs.ToArray();
+                newOpps[action] = Math.Min(state.OppFigs[action] + state.Dice, p2.Length - 1);
+                for (int i = 0; i < newFigs.Length; i++)
                 {
-                    legal.Add(i);
+                    if (p1[newFigs[i]] == p2[newOpps[action]])
+                        newFigs[i] = 0;
                 }
+                Array.Sort(newFigs);
+                Array.Sort(newOpps);
+
+                newState = new GameState(newFigs, newOpps, 0);
             }
 
-            List<Transition> diceless = new List<Transition>();
-            if (legal.Count == 0)
-            {
-                diceless.Add(new Transition(new GameState(state.MyFigs.ToArray(), state.OppFigs.ToArray(), -1), 1.0));
-            }
-            else
-            {
-                foreach (var action in legal)
-                {
-                    int[] newFigs = state.MyFigs.ToArray();
-                    int[] newOpps = state.OppFigs.ToArray();
-                    newOpps[action] = Math.Min(state.OppFigs[action] + state.Dice, p2.Length - 1);
-                    for (int i = 0; i < newFigs.Length; i++)
-                    {
-                        if (p1[newFigs[i]] == p2[newOpps[action]])
-                            newFigs[i] = 0;
-                    }
-                    Array.Sort(newFigs);
-                    Array.Sort(newOpps);
-
-                    diceless.Add(new Transition(new GameState(newFigs, newOpps, -1), 1 / (double)legal.Count));
-                }
-            }
 
             List<Transition> diced = new List<Transition>();
-            foreach (var transition in diceless)
+            for (int i = 1; i < diceSize + 1; i++)
             {
-                for (int i = 1; i < diceSize + 1; i++)
-                {
-                    diced.Add(new Transition(new GameState(transition.State.MyFigs.ToArray(), transition.State.OppFigs.ToArray(), i), transition.Probability / (double)diceSize));
-                }
+                    diced.Add(new Transition(new GameState(newState.MyFigs.ToArray(), newState.OppFigs.ToArray(), i), (double)(1.0f / (double)diceSize)));
             }
             return diced;
         }
 
-        static List<Transition> nextStates(GameState state, int action)
+        static List<Transition> nextLoadedStates(GameState state, int action)
         {
             List<Transition> resTrans = new List<Transition>();
             foreach (var oppsState in nextStochastic(state, action))
@@ -216,9 +212,10 @@ namespace ValueIteration2
                 if (isTerminal(oppsState.State))
                 {
                     resTrans.Add(oppsState);
-                } else
+                }
+                else
                 {
-                    foreach (var res in oppRngPolicy(oppsState.State))
+                    foreach (var res in oppLoadedPolicy(oppsState.State))
                     {
                         resTrans.Add(new Transition(res.State, res.Probability * oppsState.Probability));
                     }
@@ -240,9 +237,9 @@ namespace ValueIteration2
             }
             else
             {
-                return 0.0f;
+                return -1.0f;
             }
-            
+
         }
 
         static bool isTerminal(GameState state)
@@ -289,7 +286,7 @@ namespace ValueIteration2
                     {
                         var state = new GameState(myPos, oppPos, dice);
                         allStates.Add(state);
-                        if(allStates.Count % 1000 == 0)
+                        if (allStates.Count % 1000 == 0)
                         {
                             Console.WriteLine(allStates.Count);
                         }
@@ -303,9 +300,9 @@ namespace ValueIteration2
                 actionCache[state] = legal;
                 foreach (var action in legal)
                 {
-                    transitionCache[(state, action)] = nextStates(state,action);
+                    transitionCache[(state, action)] = nextLoadedStates(state, action);
                 }
-                
+
             }
             Console.WriteLine(allStates.Count);
 
@@ -333,7 +330,7 @@ namespace ValueIteration2
         {
             int iteration = 0;
 
-            
+
             while (true)
             {
                 double delta = 0.0f;
@@ -355,7 +352,8 @@ namespace ValueIteration2
                 iteration++;
                 Console.WriteLine($"Iteration:{iteration}, MaxDelta:{delta}, Elapsed Time: {stopwatch.ElapsedMilliseconds}");
 
-                if (delta < epsilon) {
+                if (delta < epsilon)
+                {
                     numOfIter = iteration;
                     break;
                 }
@@ -373,7 +371,7 @@ namespace ValueIteration2
             {
                 double q = 0.0;
 
-                foreach (var t in transitionCache[(state,action)])
+                foreach (var t in transitionCache[(state, action)])
                 {
                     q += t.Probability * (reward(t.State) + gamma * V[t.State]);
                 }
@@ -396,28 +394,41 @@ namespace ValueIteration2
             return res;
         }
 
-        static void PrintGameStateDictionary(Dictionary<GameState, int> dict)
-        {
-            foreach (var kvp in dict)
-            {
-                GameState state = kvp.Key;
-                int value = kvp.Value;
-                Console.WriteLine($"{state} => {value}");
-            }
-
-        }
-
         static void SavePolicy(Dictionary<GameState, int> policy, string filePath)
         {
+            // Convert GameState keys to string
             var dictToSave = policy.ToDictionary(
-                kvp => kvp.Key.ToString(),
+                kvp => kvp.Key.ToString(),  // string key
                 kvp => kvp.Value
             );
 
+            // Serialize to JSON
             var options = new JsonSerializerOptions { WriteIndented = true };
             string json = JsonSerializer.Serialize(dictToSave, options);
 
             File.WriteAllText(filePath, json);
+        }
+
+        // Načítání strategie
+        static Dictionary<GameState, int> LoadStrategy(string filePath)
+        {
+            string json = File.ReadAllText(filePath);
+            var dict = JsonSerializer.Deserialize<Dictionary<string, int>>(json);
+
+            return dict.ToDictionary(
+                kvp => ParseGameState(kvp.Key),
+                kvp => kvp.Value
+            );
+        }
+
+        // Parsování her
+        static GameState ParseGameState(string s)
+        {
+            var parts = s.Split(';');
+            int dice = int.Parse(parts.Last());
+            var myFigs = parts[0].Trim('[', ']').Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries).Select(int.Parse).ToArray();
+            var oppFigs = parts[1].Trim('[', ']').Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries).Select(int.Parse).ToArray();
+            return new GameState(myFigs, oppFigs, dice);
         }
 
     }
