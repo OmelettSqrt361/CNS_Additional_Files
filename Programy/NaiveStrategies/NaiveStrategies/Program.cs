@@ -15,9 +15,9 @@ namespace NaiveStrategies
     class Program
     {
         // Parametry stavového prostoru
-        static int diceSize = 2;
-        static int[] p1 = { 0, 1, 2, 3, 4, 5, 6, 7 };
-        static int[] p2 = { 8, 1, 2, 3, 4, 5, 6, 9 };
+        static int diceSize = 4;
+        static int[] p1 = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13 };
+        static int[] p2 = { 14, 15, 16, 17, 18, 5, 6, 7, 8, 9, 10, 11, 12, 19 };
 
         // Diagnostic Data
         static int numOfIter;
@@ -27,7 +27,7 @@ namespace NaiveStrategies
         static double gamma = 1f;
         static double epsilon = 10;
         static string filepath = @"C:\Users\jakub\OneDrive\Plocha\Člověče nezlob se\CNS_Additional_Files\Strategie\";
-        static string nameOfGame = "cara7_";
+        static string nameOfGame = "aseb_";
 
         //Caching
         static Dictionary<(GameState, int), List<Transition>> transitionCache;
@@ -36,7 +36,7 @@ namespace NaiveStrategies
         static void Main()
         {
             // Počáteční hodnoty
-            var startState = new GameState(new int[] { 0, 0 }, new int[] { 0, 0 }, 1);
+            var startState = new GameState(new int[] { 0, 0, 0 }, new int[] { 0, 0, 0 }, 1);
             Console.WriteLine($"Naive start: {startState}");
             Console.WriteLine($"[{string.Join(",", legalActions(startState))}]");
 
@@ -51,28 +51,30 @@ namespace NaiveStrategies
             HashSet<GameState> allStates = searchAllAllStates(startState);
 
             //Vypsání vybrané akce
+
+            var sw = new Stopwatch();
+
             Console.Clear();
-            Console.WriteLine("Bullet");
-            SavePolicy(bulletPolicyGen(allStates), filepath+nameOfGame+"bullet"+".json");
-            Console.WriteLine("Hotovo\n");
-            Console.WriteLine("Bullet+");
-            SavePolicy(bulletPlusPolicyGen(allStates), filepath + nameOfGame + "bulletPlus" + ".json");
-            Console.WriteLine("Hotovo\n");
-            Console.WriteLine("Raid");
-            SavePolicy(raidPolicyGen(allStates), filepath + nameOfGame + "raid" + ".json");
-            Console.WriteLine("Hotovo\n");
-            Console.WriteLine("Raid+");
-            SavePolicy(raidPolicyGen(allStates), filepath + nameOfGame + "raidPlus" + ".json");
-            Console.WriteLine("Hotovo\n");
-            Console.WriteLine("SimpleScore");
-            SavePolicy(scoreBasedPolicyGen(allStates), filepath + nameOfGame + "simpleScore" + ".json");
-            Console.WriteLine("Hotovo\n");
-            Console.WriteLine("Depth3");
-            SavePolicy(minimaxPolicyGen(allStates,3), filepath + nameOfGame + "depth3" + ".json");
-            Console.WriteLine("Hotovo\n");
-            Console.WriteLine("Depth5");
-            SavePolicy(minimaxPolicyGen(allStates, 5), filepath + nameOfGame + "depth5" + ".json");
-            Console.WriteLine("Hotovo");
+            sw.Start();
+
+            RunTimed("Bullet", () =>
+                SavePolicy(bulletPolicyGen(allStates), filepath + nameOfGame + "bullet.json"), sw);
+
+            RunTimed("Bullet+", () =>
+                SavePolicy(bulletPlusPolicyGen(allStates), filepath + nameOfGame + "bulletPlus.json"), sw);
+
+            RunTimed("Raid", () =>
+                SavePolicy(raidPolicyGen(allStates), filepath + nameOfGame + "raid.json"), sw);
+
+            RunTimed("Raid+", () =>
+                SavePolicy(raidPolicyGen(allStates), filepath + nameOfGame + "raidPlus.json"), sw);
+
+            RunTimed("SimpleScore", () =>
+                SavePolicy(scoreBasedPolicyGen(allStates), filepath + nameOfGame + "simpleScore.json"), sw);
+
+            sw.Stop();
+
+            Console.WriteLine($"\nTOTAL TIME: {sw.Elapsed}");
             Console.ReadLine();
         }
 
@@ -83,6 +85,18 @@ namespace NaiveStrategies
                 Console.WriteLine($"{state},term:{isTerminal(state)}");
             }
         }
+
+        static void RunTimed(string label, Action action, Stopwatch sw)
+        {
+            Console.WriteLine(label);
+
+            var before = sw.Elapsed;
+            action();
+            var after = sw.Elapsed;
+
+            Console.WriteLine($"Hotovo ({after - before})\n");
+        }
+
 
 
         static int[] legalActions(GameState state)
@@ -237,67 +251,6 @@ namespace NaiveStrategies
                 || state.OppFigs.All(p => p == p2[p2.Length - 1]);
         }
 
-        static HashSet<GameState> searchAllStates(GameState start)
-        {
-            var visited = new HashSet<GameState>();
-            var queue = new Queue<GameState>();
-
-            for (int i = 1; i < diceSize + 1; i++)
-            {
-                GameState startState = new GameState(start.MyFigs.ToArray(), start.OppFigs.ToArray(), i);
-                visited.Add(startState);
-                queue.Enqueue(startState);
-
-                foreach (var nextState in possiblePlays(startState))
-                {
-                    GameState swapState = new GameState(nextState.State.OppFigs.ToArray(), nextState.State.MyFigs.ToArray(), nextState.State.Dice);
-
-                    visited.Add(swapState);
-                    queue.Enqueue(swapState);
-                }
-
-            }
-
-            int iteration = 0;
-            while (queue.Count > 0)
-            {
-                iteration++;
-                if (iteration % 1000 == 0)
-                {
-                    Console.WriteLine(iteration);
-                }
-                var s = queue.Dequeue();
-
-                var legal = legalActions(s);
-                actionCache[s] = legal;
-
-                if (isTerminal(s))
-                {
-                    var next = nextStates(s, -1);
-                    transitionCache[(s, -1)] = next;
-                    continue;
-                }
-
-                foreach (int action in legal)
-                {
-                    var next = nextStates(s, action);
-
-                    transitionCache[(s, action)] = next;
-
-                    foreach (var t in next)
-                    {
-                        if (!visited.Contains(t.State))
-                        {
-                            visited.Add(t.State);
-                            queue.Enqueue(t.State);
-                        }
-                    }
-                }
-            }
-            Console.WriteLine(iteration);
-            return visited;
-        }
-
         static HashSet<GameState> searchAllAllStates(GameState start)
         {
             var allStates = new HashSet<GameState>();
@@ -307,7 +260,12 @@ namespace NaiveStrategies
             int maxP1 = p1.Length - 1;
             int maxP2 = p2.Length - 1;
 
-            // Helper to enumerate all positions
+            int startMy = p1[0];
+            int endMy = p1[maxP1];
+            int startOpp = p2[0];
+            int endOpp = p2[maxP2];
+
+            // Helper to enumerate all positions for N pieces up to maxPos
             IEnumerable<int[]> AllPositions(int numPieces, int maxPos)
             {
                 int[] positions = new int[numPieces];
@@ -328,36 +286,61 @@ namespace NaiveStrategies
                 }
             }
 
+            bool ArePositionsValid(int[] myPos, int[] oppPos)
+            {
+                var seen = new HashSet<int>();
+
+                bool IsFreeOverlap(int pos) =>
+                    pos == startMy || pos == endMy || pos == startOpp || pos == endOpp;
+
+                foreach (var p in myPos)
+                {
+                    if (IsFreeOverlap(p)) continue;
+                    if (!seen.Add(p)) return false;
+                }
+
+                foreach (var p in oppPos)
+                {
+                    if (IsFreeOverlap(p)) continue;
+                    if (!seen.Add(p)) return false;
+                }
+
+                return true;
+            }
+
             foreach (var myPos in AllPositions(myPiecesCount, maxP1))
             {
                 foreach (var oppPos in AllPositions(oppPiecesCount, maxP2))
                 {
+                    // Skip invalid states
+                    if (!ArePositionsValid(myPos, oppPos))
+                        continue;
+
                     for (int dice = 1; dice <= diceSize; dice++)
                     {
                         var state = new GameState(myPos, oppPos, dice);
                         allStates.Add(state);
-                        if (allStates.Count % 1000 == 0)
-                        {
+
+                        if (allStates.Count % 100000 == 0)
                             Console.WriteLine(allStates.Count);
-                        }
                     }
                 }
             }
 
+            Console.WriteLine("Saving...");
             foreach (var state in allStates)
             {
                 var legal = legalActions(state);
                 actionCache[state] = legal;
+
                 foreach (var action in legal)
-                {
                     transitionCache[(state, action)] = nextStates(state, action);
-                }
-
             }
-            Console.WriteLine(allStates.Count);
 
+            Console.WriteLine(allStates.Count);
             return allStates;
         }
+
 
         static double BellmanUpdate(GameState state)
         {
@@ -561,6 +544,9 @@ namespace NaiveStrategies
         {
             Dictionary<GameState, int> policy = new Dictionary<GameState, int>();
 
+
+            int iter = 0;
+            int count = allStates.Count;
             foreach (var state in allStates)
             {
                 // terminal states have no meaningful action
@@ -587,6 +573,12 @@ namespace NaiveStrategies
                         bestScore = expectedScore;
                         bestAction = action;
                     }
+                }
+
+                iter++;
+                if(iter % 10000 == 0)
+                {
+                    Console.WriteLine($"{100 * ((double)iter / (double)count)}%");
                 }
 
                 policy[state] = bestAction;
