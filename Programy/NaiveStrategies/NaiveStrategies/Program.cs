@@ -24,7 +24,7 @@ namespace NaiveStrategies
 
         // Parametry Iterace Hodnot
         static Dictionary<GameState, double> V = new Dictionary<GameState, double>();
-        static double gamma = 0.95f;
+        static double gamma = 1f;
         static double epsilon = 10;
         static string filepath = @"C:\Users\jakub\OneDrive\Plocha\Člověče nezlob se\CNS_Additional_Files\Strategie\";
         static string nameOfGame = "cara7_";
