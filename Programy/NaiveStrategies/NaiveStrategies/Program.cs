@@ -72,6 +72,9 @@ namespace NaiveStrategies
             RunTimed("SimpleScore", () =>
                 SavePolicy(scoreBasedPolicyGen(allStates), filepath + nameOfGame + "simpleScore.json"), sw);
 
+            RunTimed("Depth3", () =>
+                SavePolicy(minimaxPolicyGen(allStates,3), filepath + nameOfGame + "simpleScore.json"), sw);
+
             sw.Stop();
 
             Console.WriteLine($"\nTOTAL TIME: {sw.Elapsed}");
@@ -296,13 +299,13 @@ namespace NaiveStrategies
                 foreach (var p in myPos)
                 {
                     if (IsFreeOverlap(p)) continue;
-                    if (!seen.Add(p)) return false;
+                    if (!seen.Add(p1[p])) return false;
                 }
 
                 foreach (var p in oppPos)
                 {
                     if (IsFreeOverlap(p)) continue;
-                    if (!seen.Add(p)) return false;
+                    if (!seen.Add(p2[p])) return false;
                 }
 
                 return true;
@@ -705,8 +708,11 @@ namespace NaiveStrategies
         {
             Dictionary<GameState, int> policy = new Dictionary<GameState, int>();
 
+            int iter = 0;
+            int count = allStates.Count;
             foreach (var state in allStates)
             {
+
                 if (isTerminal(state))
                 {
                     policy[state] = -1;
@@ -738,6 +744,12 @@ namespace NaiveStrategies
                 }
 
                 policy[state] = bestAction;
+                iter++;
+                if (iter % 10000 == 0)
+                {
+                    Console.WriteLine($"{100*((double)iter/(double)count)}%");
+                }
+
             }
 
             return policy;

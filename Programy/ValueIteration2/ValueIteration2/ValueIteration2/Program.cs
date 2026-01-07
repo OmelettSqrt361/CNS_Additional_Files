@@ -8,16 +8,15 @@ using System.Collections.Immutable;
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.IO;
 
 namespace ValueIteration2
 {
     class Program
     {
         // Parametry stavového prostoru
-        static int diceSize = 2;
-        static int[] p1 = { 0, 1, 2, 3, 4, 5, 6, 7};
-        static int[] p2 = { 8, 1, 2, 3, 4, 5, 6, 9};
+        static int diceSize = 4;
+        static int[] p1 = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13 };
+        static int[] p2 = { 14, 15, 16, 17, 18, 5, 6, 7, 8, 9, 10, 11, 12, 19 };
 
         // Diagnostic Data
         static int initializationTime;
@@ -38,7 +37,7 @@ namespace ValueIteration2
         static void Main()
         {
             // Počáteční hodnoty
-            var startState = new GameState(new int[] { 0, 0 }, new int[] { 0, 0 }, 1);
+            var startState = new GameState(new int[] { 0, 0, 0 }, new int[] { 0, 0, 0 }, 1);
             Console.WriteLine($"Start: {startState}");
             Console.WriteLine($"[{string.Join(",", legalActions(startState))}]");
 
@@ -260,7 +259,12 @@ namespace ValueIteration2
             int maxP1 = p1.Length - 1;
             int maxP2 = p2.Length - 1;
 
-            // Helper to enumerate all positions
+            int startMy = p1[0];
+            int endMy = p1[maxP1];
+            int startOpp = p2[0];
+            int endOpp = p2[maxP2];
+
+            // Helper to enumerate all positions for N pieces up to maxPos
             IEnumerable<int[]> AllPositions(int numPieces, int maxPos)
             {
                 int[] positions = new int[numPieces];
@@ -281,34 +285,58 @@ namespace ValueIteration2
                 }
             }
 
+            bool ArePositionsValid(int[] myPos, int[] oppPos)
+            {
+                var seen = new HashSet<int>();
+
+                bool IsFreeOverlap(int pos) =>
+                    pos == startMy || pos == endMy || pos == startOpp || pos == endOpp;
+
+                foreach (var p in myPos)
+                {
+                    if (IsFreeOverlap(p)) continue;
+                    if (!seen.Add(p1[p])) return false;
+                }
+
+                foreach (var p in oppPos)
+                {
+                    if (IsFreeOverlap(p)) continue;
+                    if (!seen.Add(p2[p])) return false;
+                }
+
+                return true;
+            }
+
             foreach (var myPos in AllPositions(myPiecesCount, maxP1))
             {
                 foreach (var oppPos in AllPositions(oppPiecesCount, maxP2))
                 {
+                    // Skip invalid states
+                    if (!ArePositionsValid(myPos, oppPos))
+                        continue;
+
                     for (int dice = 1; dice <= diceSize; dice++)
                     {
                         var state = new GameState(myPos, oppPos, dice);
                         allStates.Add(state);
-                        if(allStates.Count % 1000 == 0)
-                        {
+
+                        if (allStates.Count % 100000 == 0)
                             Console.WriteLine(allStates.Count);
-                        }
                     }
                 }
             }
 
+            Console.WriteLine("Saving...");
             foreach (var state in allStates)
             {
                 var legal = legalActions(state);
                 actionCache[state] = legal;
-                foreach (var action in legal)
-                {
-                    transitionCache[(state, action)] = nextStates(state,action);
-                }
-                
-            }
-            Console.WriteLine(allStates.Count);
 
+                foreach (var action in legal)
+                    transitionCache[(state, action)] = nextStates(state, action);
+            }
+
+            Console.WriteLine(allStates.Count);
             return allStates;
         }
 

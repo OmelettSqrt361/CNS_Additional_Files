@@ -9,9 +9,9 @@ namespace LudoTournament
 {
     class Program
     {
-        static int diceSize = 2;
-        static int[] p1 = { 0, 1, 2, 3, 4, 5, 6, 7 };
-        static int[] p2 = { 8, 1, 2, 3, 4, 5, 6, 9 };
+        static int diceSize = 4;
+        static int[] p1 = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13 };
+        static int[] p2 = { 14, 15, 16, 17, 18, 5, 6, 7, 8, 9, 10, 11, 12, 19 };
         static int numGamesPerPair = 10000;
 
         static Random rnd = new Random();
@@ -100,8 +100,8 @@ namespace LudoTournament
         // Zahrát hru
         static int PlayGame(Dictionary<GameState, int> firstStrategy, Dictionary<GameState, int> secondStrategy)
         {
-            var myFigs = new int[] { 0, 0 };
-            var oppFigs = new int[] { 0, 0 };
+            var myFigs = new int[] { 0, 0, 0 };
+            var oppFigs = new int[] { 0, 0, 0 };
             int dice = rnd.Next(1, diceSize + 1);
             bool firstToPlay = true;
             var state = new GameState(myFigs, oppFigs, dice);
