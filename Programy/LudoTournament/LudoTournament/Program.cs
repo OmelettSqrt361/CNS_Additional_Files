@@ -9,10 +9,14 @@ namespace LudoTournament
 {
     class Program
     {
-        static int diceSize = 4;
-        static int[] p1 = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13 };
-        static int[] p2 = { 14, 15, 16, 17, 18, 5, 6, 7, 8, 9, 10, 11, 12, 19 };
+
+        // Pro úpravu stavového prostoru je nutné opravit i definici hry ve funkci PlayGame
+
+        static int diceSize = 2;
+        static int[] p1 = { 0, 1, 2, 3, 4, 5, 6, 7 };
+        static int[] p2 = { 8, 1, 2, 3, 4, 5, 6, 9 };
         static int numGamesPerPair = 10000;
+        static int iterThreshhold = 10000;
 
         static Random rnd = new Random();
 
@@ -54,13 +58,15 @@ namespace LudoTournament
 
                     Console.WriteLine($"Simulating {strategyNames[i]} vs {strategyNames[j]}");
                     int firstWins = 0;
+                    int ties = 0;
                     for (int g = 0; g < numGamesPerPair; g++)
                     {
                         int winner = PlayGame(strategies[j], strategies[i]);
                         if (winner == 1) firstWins++;
+                        else if (winner == 0) ties++;
                     }
 
-                    firstPlayerWinsProc[i, j] = (double)firstWins / (double)numGamesPerPair;
+                    firstPlayerWinsProc[i, j] = (double)(firstWins+ties) / (double)(numGamesPerPair+ties);
                 }
             }
 
@@ -100,14 +106,18 @@ namespace LudoTournament
         // Zahrát hru
         static int PlayGame(Dictionary<GameState, int> firstStrategy, Dictionary<GameState, int> secondStrategy)
         {
-            var myFigs = new int[] { 0, 0, 0 };
-            var oppFigs = new int[] { 0, 0, 0 };
+            var myFigs = new int[] { 0, 0 };
+            var oppFigs = new int[] { 0, 0 };
             int dice = rnd.Next(1, diceSize + 1);
             bool firstToPlay = true;
             var state = new GameState(myFigs, oppFigs, dice);
 
+
+            int iter = 0;
             while (true)
             {
+                iter++;
+
                 Dictionary<GameState, int> strategy = firstToPlay ? firstStrategy : secondStrategy;
                 int action = strategy.ContainsKey(state) ? strategy[state] : -1;
 
@@ -149,6 +159,11 @@ namespace LudoTournament
                 Array.Sort(opps);
                 state = new GameState(opps, figs, dice);
                 
+                if(iter > iterThreshhold)
+                {
+                    return 0;
+                }
+
 
                 // Podívat se jestli je terminální
                 if (state.MyFigs.All(p => p == p1[p1.Length - 1]))
