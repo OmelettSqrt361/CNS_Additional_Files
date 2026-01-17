@@ -13,8 +13,8 @@ namespace LudoTournament
         // Pro úpravu stavového prostoru je nutné opravit i definici hry ve funkci PlayGame
 
         static int diceSize = 2;
-        static int[] p1 = { 0, 1, 2, 3, 4, 5, 6, 7 };
-        static int[] p2 = { 8, 1, 2, 3, 4, 5, 6, 9 };
+        static int[] p1 = { 0, 1, 2, 3, 4, 5, 6 };
+        static int[] p2 = { 8, 1, 2, 3, 4, 5, 7 };
         static int numGamesPerPair = 10000;
         static int iterThreshhold = 10000;
 

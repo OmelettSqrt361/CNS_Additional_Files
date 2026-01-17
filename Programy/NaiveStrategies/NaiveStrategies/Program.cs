@@ -15,9 +15,9 @@ namespace NaiveStrategies
     class Program
     {
         // Parametry stavového prostoru
-        static int diceSize = 4;
-        static int[] p1 = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13 };
-        static int[] p2 = { 14, 15, 16, 17, 18, 5, 6, 7, 8, 9, 10, 11, 12, 19 };
+        static int diceSize = 2;
+        static int[] p1 = { 0, 1, 2, 3, 4, 5, 6 };
+        static int[] p2 = { 8, 1, 2, 3, 4, 5, 7 };
 
         // Diagnostic Data
         static int numOfIter;
@@ -27,7 +27,7 @@ namespace NaiveStrategies
         static double gamma = 1f;
         static double epsilon = 10;
         static string filepath = @"C:\Users\jakub\OneDrive\Plocha\Člověče nezlob se\CNS_Additional_Files\Strategie\";
-        static string nameOfGame = "aseb_";
+        static string nameOfGame = "cara7_";
 
         //Caching
         static Dictionary<(GameState, int), List<Transition>> transitionCache;
@@ -36,7 +36,7 @@ namespace NaiveStrategies
         static void Main()
         {
             // Počáteční hodnoty
-            var startState = new GameState(new int[] { 0, 0, 0 }, new int[] { 0, 0, 0 }, 1);
+            var startState = new GameState(new int[] { 0, 0 }, new int[] { 0, 0 }, 1);
             Console.WriteLine($"Naive start: {startState}");
             Console.WriteLine($"[{string.Join(",", legalActions(startState))}]");
 
@@ -67,13 +67,31 @@ namespace NaiveStrategies
                 SavePolicy(raidPolicyGen(allStates), filepath + nameOfGame + "raid.json"), sw);
 
             RunTimed("Raid+", () =>
-                SavePolicy(raidPolicyGen(allStates), filepath + nameOfGame + "raidPlus.json"), sw);
+                SavePolicy(raidPlusPolicyGen(allStates), filepath + nameOfGame + "raidPlus.json"), sw);
 
             RunTimed("SimpleScore", () =>
                 SavePolicy(scoreBasedPolicyGen(allStates), filepath + nameOfGame + "simpleScore.json"), sw);
 
+            RunTimed("SqrtScore", () =>
+                SavePolicy(differentScoreBasedPolicyGen(allStates, "sqrt"), filepath + nameOfGame + "sqrtScore.json"), sw);
+
+            RunTimed("SquareScore", () =>
+                SavePolicy(differentScoreBasedPolicyGen(allStates, "square"), filepath + nameOfGame + "squareScore.json"), sw);
+
+            RunTimed("LogScore", () =>
+                SavePolicy(differentScoreBasedPolicyGen(allStates, "log"), filepath + nameOfGame + "logScore.json"), sw);
+
+            RunTimed("ExpScore", () =>
+                SavePolicy(differentScoreBasedPolicyGen(allStates, "exp"), filepath + nameOfGame + "expScore.json"), sw);
+
+            RunTimed("SinScore", () =>
+                SavePolicy(differentScoreBasedPolicyGen(allStates, "sin"), filepath + nameOfGame + "sinScore.json"), sw);
+
             RunTimed("Depth3", () =>
-                SavePolicy(minimaxPolicyGen(allStates,3), filepath + nameOfGame + "simpleScore.json"), sw);
+                SavePolicy(minimaxPolicyGen(allStates,3), filepath + nameOfGame + "depth3.json"), sw);
+
+            RunTimed("Depth5", () =>
+                SavePolicy(minimaxPolicyGen(allStates, 5), filepath + nameOfGame + "depth5.json"), sw);
 
             sw.Stop();
 
@@ -543,6 +561,75 @@ namespace NaiveStrategies
             return state.MyFigs.Sum() - state.OppFigs.Sum();
         }
 
+        static double HeuristicScoreSqrt(GameState state, string oper)
+        {
+            double sum = 0;
+
+            switch (oper)
+            {
+                case "sqrt":
+                    foreach (var fig in state.MyFigs)
+                    {
+                        sum += Math.Sqrt(fig / (double)(p1.Length - 1));
+                    }
+                    foreach (var fig in state.OppFigs)
+                    {
+                        sum -= Math.Sqrt(fig / (double)(p2.Length - 1));
+                    }
+                    break;
+                case "square":
+                    foreach (var fig in state.MyFigs)
+                    {
+                        sum += Math.Pow(fig / (double)(p1.Length - 1),2);
+                    }
+                    foreach (var fig in state.OppFigs)
+                    {
+                        sum -= Math.Pow(fig / (double)(p2.Length - 1),2);
+                    }
+                    break;
+                case "log":
+                    foreach (var fig in state.MyFigs)
+                    {
+                        // 1.442695040f = 1/ln(2)
+                        sum += Math.Log(((fig / (double)(p1.Length - 1))+1)* 1.442695040f);
+                    }
+                    foreach (var fig in state.OppFigs)
+                    {
+                        sum -= Math.Log(((fig / (double)(p1.Length - 1)) + 1) * 1.442695040f);
+                    }
+                    break;
+                case "exp":
+                    foreach (var fig in state.MyFigs)
+                    {
+                        // 0.69314718f = ln(2)
+                        sum += Math.Exp(((fig / (double)(p1.Length - 1))* 0.69314718f) - 1);
+                    }
+                    foreach (var fig in state.OppFigs)
+                    {
+                        sum -= Math.Exp(((fig / (double)(p1.Length - 1)) * 0.69314718f) - 1);
+                    }
+                    break;
+                case "sin":
+                    foreach (var fig in state.MyFigs)
+                    {
+                        double xHalf = (fig / (double)(p1.Length - 1)) - 0.5f;
+                        sum += 0.5f + 1.570796326f * xHalf + 2.5838563900f * Math.Pow(xHalf, 3) + 1.2750820199f * Math.Pow(xHalf, 5);
+                    }
+                    foreach (var fig in state.OppFigs)
+                    {
+                        double xHalf = (fig / (double)(p1.Length - 1)) - 0.5f;
+                        sum -= 0.5f + 1.570796326f * xHalf + 2.5838563900f * Math.Pow(xHalf, 3) + 1.2750820199f * Math.Pow(xHalf, 5);
+                    }
+                    break;
+
+                default:
+                    Console.WriteLine("Defaulted");
+                    break;
+            }
+
+            return sum;
+        }
+
         static Dictionary<GameState, int> scoreBasedPolicyGen(HashSet<GameState> allStates)
         {
             Dictionary<GameState, int> policy = new Dictionary<GameState, int>();
@@ -590,9 +677,51 @@ namespace NaiveStrategies
             return policy;
         }
 
-        static List<Transition> playerChanceMoves(GameState state, int action)
+        static Dictionary<GameState, int> differentScoreBasedPolicyGen(HashSet<GameState> allStates, string operation)
         {
-            return nextStochastic(state, action);
+            Dictionary<GameState, int> policy = new Dictionary<GameState, int>();
+
+
+            int iter = 0;
+            int count = allStates.Count;
+            foreach (var state in allStates)
+            {
+                // terminal states have no meaningful action
+                if (isTerminal(state))
+                {
+                    policy[state] = -1;
+                    continue;
+                }
+
+                double bestScore = double.NegativeInfinity;
+                int bestAction = -1;
+
+                foreach (int action in legalActions(state))
+                {
+                    double expectedScore = 0.0;
+
+                    foreach (var transition in nextStates(state, action))
+                    {
+                        expectedScore += transition.Probability * HeuristicScoreSqrt(transition.State, operation);
+                    }
+
+                    if (expectedScore > bestScore)
+                    {
+                        bestScore = expectedScore;
+                        bestAction = action;
+                    }
+                }
+
+                iter++;
+                if (iter % 10000 == 0)
+                {
+                    Console.WriteLine($"{100 * ((double)iter / (double)count)}%");
+                }
+
+                policy[state] = bestAction;
+            }
+
+            return policy;
         }
 
         static List<Transition> opponentMinTransitions(GameState state)
@@ -609,7 +738,6 @@ namespace NaiveStrategies
                 }
             }
 
-            // No legal move → opponent skips, only dice happens
             if (legal.Count == 0)
             {
                 List<Transition> skip = new List<Transition>();
@@ -656,7 +784,6 @@ namespace NaiveStrategies
                 }
             }
 
-            // Dice roll after opponent move
             List<Transition> result = new List<Transition>();
             foreach (var s in worstStates)
             {
