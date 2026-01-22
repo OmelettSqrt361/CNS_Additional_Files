@@ -1,0 +1,1011 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Diagnostics;
+using System.Collections.Immutable;
+using System.IO;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using System.IO;
+
+namespace NaiveDomecekEnd
+{
+    class Program
+    {
+        // Parametry stavového prostoru
+        static int diceSize = 6;
+        static int[] p1 = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22 };
+        static int[] p2 = { -1, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 23, 24 };
+
+        // Diagnostic Data
+        static int numOfIter;
+
+        // Parametry Iterace Hodnot
+        static Dictionary<GameState, double> V = new Dictionary<GameState, double>();
+        static double gamma = 1f;
+        static double epsilon = 10;
+        static string filepath = @"C:\Users\jakub\OneDrive\Plocha\Člověče nezlob se\CNS_Additional_Files\Strategie\";
+        static string nameOfGame = "cnb_";
+
+        //Caching
+        static Dictionary<(GameState, int), List<Transition>> transitionCache;
+        static Dictionary<GameState, int[]> actionCache;
+
+        static void Main()
+        {
+            // Počáteční hodnoty
+            var startState = new GameState(new int[] { 0, 0 }, new int[] { 0, 0 }, 1);
+            Console.WriteLine($"Naive start: {startState}");
+            Console.WriteLine($"[{string.Join(",", legalActions(startState))}]");
+
+            Console.ReadLine();
+
+            // Inicializace V
+            transitionCache = new Dictionary<(GameState, int), List<Transition>>();
+            actionCache = new Dictionary<GameState, int[]>();
+
+            Console.Clear();
+            Console.WriteLine("Hledání všech stavů a inicializace \n");
+            HashSet<GameState> allStates = searchAllAllStates(startState);
+
+            //Vypsání vybrané akce
+
+            var sw = new Stopwatch();
+
+            Console.Clear();
+            sw.Start();
+
+            RunTimed("Bullet", () =>
+                SavePolicy(bulletPolicyGen(allStates), filepath + nameOfGame + "bullet.json"), sw);
+
+            RunTimed("Bullet+", () =>
+                SavePolicy(bulletPlusPolicyGen(allStates), filepath + nameOfGame + "bulletPlus.json"), sw);
+
+            RunTimed("Raid", () =>
+                SavePolicy(raidPolicyGen(allStates), filepath + nameOfGame + "raid.json"), sw);
+
+            RunTimed("Raid+", () =>
+                SavePolicy(raidPlusPolicyGen(allStates), filepath + nameOfGame + "raidPlus.json"), sw);
+
+            RunTimed("SimpleScore", () =>
+                SavePolicy(scoreBasedPolicyGen(allStates), filepath + nameOfGame + "simpleScore.json"), sw);
+
+            RunTimed("SqrtScore", () =>
+                SavePolicy(differentScoreBasedPolicyGen(allStates, "sqrt"), filepath + nameOfGame + "sqrtScore.json"), sw);
+
+            RunTimed("SquareScore", () =>
+                SavePolicy(differentScoreBasedPolicyGen(allStates, "square"), filepath + nameOfGame + "squareScore.json"), sw);
+
+            RunTimed("LogScore", () =>
+                SavePolicy(differentScoreBasedPolicyGen(allStates, "log"), filepath + nameOfGame + "logScore.json"), sw);
+
+            RunTimed("ExpScore", () =>
+                SavePolicy(differentScoreBasedPolicyGen(allStates, "exp"), filepath + nameOfGame + "expScore.json"), sw);
+
+            RunTimed("SinScore", () =>
+                SavePolicy(differentScoreBasedPolicyGen(allStates, "sin"), filepath + nameOfGame + "sinScore.json"), sw);
+
+            RunTimed("Depth3", () =>
+                SavePolicy(minimaxPolicyGen(allStates, 3), filepath + nameOfGame + "depth3.json"), sw);
+
+            RunTimed("Depth5", () =>
+                SavePolicy(minimaxPolicyGen(allStates, 5), filepath + nameOfGame + "depth5.json"), sw);
+
+            sw.Stop();
+
+            Console.WriteLine($"\nTOTAL TIME: {sw.Elapsed}");
+            Console.ReadLine();
+        }
+
+        static void PrintAllStates(HashSet<GameState> states)
+        {
+            foreach (var state in states)
+            {
+                Console.WriteLine($"{state},term:{isTerminal(state)}");
+            }
+        }
+
+        static void RunTimed(string label, Action action, Stopwatch sw)
+        {
+            Console.WriteLine(label);
+
+            var before = sw.Elapsed;
+            action();
+            var after = sw.Elapsed;
+
+            Console.WriteLine($"Hotovo ({after - before})\n");
+        }
+
+        static int[] legalActions(GameState state)
+        {
+            List<int> resList = new List<int>();
+            if (isTerminal(state))
+            {
+                resList.Add(-1);
+                return resList.ToArray();
+            }
+            for (int i = 0; i < state.MyFigs.Length; i++)
+            {
+                int current = state.MyFigs[i] + state.Dice;
+                if (!state.MyFigs.Contains(current) && current <= p1.Length - 1)
+                {
+                    resList.Add(i);
+                }
+            }
+            if (resList.Count == 0)
+            {
+                // -1 Značí nulovou akci (nic se neděje)
+                resList.Add(-1);
+            }
+
+            return resList.ToArray();
+        }
+
+
+        static int[] legalActionsOpp(GameState state)
+        {
+            List<int> resList = new List<int>();
+            if (isTerminal(state))
+            {
+                resList.Add(-1);
+                return resList.ToArray();
+            }
+            for (int i = 0; i < state.OppFigs.Length; i++)
+            {
+                int current = state.OppFigs[i] + state.Dice;
+                if (!state.OppFigs.Contains(current) && current <= p2.Length)
+                {
+                    resList.Add(i);
+                }
+            }
+            if (resList.Count == 0)
+            {
+                // -1 Značí nulovou akci (nic se neděje)
+                resList.Add(-1);
+            }
+
+            return resList.ToArray();
+        }
+
+        static List<Transition> nextStochastic(GameState state, int action)
+        {
+            // Řešení nulové akce pro hráče
+            List<Transition> result = new List<Transition>();
+            if (action == -1)
+            {
+                for (int i = 1; i < diceSize + 1; i++)
+                {
+                    result.Add(new Transition(new GameState(state.MyFigs.ToArray(), state.OppFigs.ToArray(), i), 1 / (double)diceSize));
+                }
+                return result;
+            }
+
+            int[] newFigs = state.MyFigs.ToArray();
+            int[] newOpps = state.OppFigs.ToArray();
+
+            newFigs[action] = Math.Min(state.MyFigs[action] + state.Dice, p1.Length - 1);
+            for (int i = 0; i < newOpps.Length; i++)
+            {
+                if (p1[newFigs[action]] == p2[newOpps[i]]) //System.IndexOutOfRangeException: Index je mimo hranice pole.
+                    newOpps[i] = 0;
+            }
+
+            //Zmenšení stavového prostoru, protože na permutaci figurek nezáleží
+            Array.Sort(newFigs);
+            Array.Sort(newOpps);
+
+            for (int i = 1; i < diceSize + 1; i++)
+            {
+                result.Add(new Transition(new GameState(newFigs, newOpps, i), 1 / (double)diceSize));
+            }
+            return result;
+        }
+
+        // Random Opponent Policy
+        static List<Transition> possiblePlays(GameState state)
+        {
+
+            List<int> legal = new List<int>();
+            for (int i = 0; i < state.OppFigs.Length; i++)
+            {
+                int current = Math.Min(state.OppFigs[i] + state.Dice, p2.Length - 1);
+                if (!(state.OppFigs.Contains(current) && current != p2.Length - 1) && state.OppFigs[i] != p2.Length - 1)
+                {
+                    legal.Add(i);
+                }
+            }
+
+            List<Transition> diceless = new List<Transition>();
+            if (legal.Count == 0)
+            {
+                diceless.Add(new Transition(new GameState(state.MyFigs.ToArray(), state.OppFigs.ToArray(), -1), 1.0));
+            }
+            else
+            {
+                foreach (var action in legal)
+                {
+                    int[] newFigs = state.MyFigs.ToArray();
+                    int[] newOpps = state.OppFigs.ToArray();
+                    newOpps[action] = Math.Min(state.OppFigs[action] + state.Dice, p2.Length - 1);
+                    for (int i = 0; i < newFigs.Length; i++)
+                    {
+                        if (p1[newFigs[i]] == p2[newOpps[action]])
+                            newFigs[i] = 0;
+                    }
+                    Array.Sort(newFigs);
+                    Array.Sort(newOpps);
+
+                    diceless.Add(new Transition(new GameState(newFigs, newOpps, -1), 1 / (double)legal.Count));
+                }
+            }
+
+            List<Transition> diced = new List<Transition>();
+            foreach (var transition in diceless)
+            {
+                for (int i = 1; i < diceSize + 1; i++)
+                {
+                    diced.Add(new Transition(new GameState(transition.State.MyFigs.ToArray(), transition.State.OppFigs.ToArray(), i), transition.Probability / (double)diceSize));
+                }
+            }
+            return diced;
+        }
+
+        static List<Transition> nextStates(GameState state, int action)
+        {
+            List<Transition> resTrans = new List<Transition>();
+            foreach (var oppsState in nextStochastic(state, action))
+            {
+                if (isTerminal(oppsState.State))
+                {
+                    resTrans.Add(oppsState);
+                }
+                else
+                {
+                    foreach (var res in possiblePlays(oppsState.State))
+                    {
+                        resTrans.Add(new Transition(res.State, res.Probability * oppsState.Probability));
+                    }
+                }
+            }
+            return resTrans;
+
+        }
+
+        static double reward(GameState state)
+        {
+            if (state.MyFigs.ToArray() == new int[] { 21, 22 } && state.OppFigs.ToArray() == new int[] { 23, 24 })
+            {
+                return 0;
+            }
+            else if (state.MyFigs.ToArray() == new int[] { 21, 22 })
+            {
+                return 100;
+            }
+            else if (state.OppFigs.ToArray() == new int[] { 23, 24 })
+            {
+                return 100;
+            }
+            else
+            {
+                return 100;
+            }
+
+        }
+
+        static bool isTerminal(GameState state)
+        {
+            return state.MyFigs.ToArray() == new int[] { 21, 22 } || state.OppFigs.ToArray() == new int[] { 23, 24 };
+        }
+
+        static HashSet<GameState> searchAllAllStates(GameState start)
+        {
+            var allStates = new HashSet<GameState>();
+
+            int myPiecesCount = start.MyFigs.Length;
+            int oppPiecesCount = start.OppFigs.Length;
+            int maxP1 = p1.Length - 1;
+            int maxP2 = p2.Length - 1;
+
+            int startMy = p1[0];
+            int endMy = p1[maxP1];
+            int startOpp = p2[0];
+            int endOpp = p2[maxP2];
+
+            // Helper to enumerate all positions for N pieces up to maxPos
+            IEnumerable<int[]> AllPositions(int numPieces, int maxPos)
+            {
+                int[] positions = new int[numPieces];
+                while (true)
+                {
+                    yield return (int[])positions.Clone();
+
+                    int idx = 0;
+                    while (idx < numPieces)
+                    {
+                        positions[idx]++;
+                        if (positions[idx] <= maxPos)
+                            break;
+                        positions[idx] = 0;
+                        idx++;
+                    }
+                    if (idx == numPieces) break;
+                }
+            }
+
+            bool ArePositionsValid(int[] myPos, int[] oppPos)
+            {
+                var seen = new HashSet<int>();
+
+                bool IsFreeOverlap(int pos) =>
+                    pos == startMy || pos == endMy || pos == startOpp || pos == endOpp;
+
+                foreach (var p in myPos)
+                {
+                    if (IsFreeOverlap(p)) continue;
+                    if (!seen.Add(p1[p])) return false;
+                }
+
+                foreach (var p in oppPos)
+                {
+                    if (IsFreeOverlap(p)) continue;
+                    if (!seen.Add(p2[p])) return false;
+                }
+
+                return true;
+            }
+
+            foreach (var myPos in AllPositions(myPiecesCount, maxP1))
+            {
+                foreach (var oppPos in AllPositions(oppPiecesCount, maxP2))
+                {
+                    // Skip invalid states
+                    if (!ArePositionsValid(myPos, oppPos))
+                        continue;
+
+                    for (int dice = 1; dice <= diceSize; dice++)
+                    {
+                        var state = new GameState(myPos, oppPos, dice);
+                        allStates.Add(state);
+
+                        if (allStates.Count % 100000 == 0)
+                            Console.WriteLine(allStates.Count);
+                    }
+                }
+            }
+
+            Console.WriteLine("Saving...");
+            foreach (var state in allStates)
+            {
+                var legal = legalActions(state);
+                actionCache[state] = legal;
+
+                foreach (var action in legal)
+                    transitionCache[(state, action)] = nextStates(state, action);
+            }
+
+            Console.WriteLine(allStates.Count);
+            return allStates;
+        }
+
+
+        static double BellmanUpdate(GameState state)
+        {
+            double best = double.NegativeInfinity;
+
+            foreach (int action in actionCache[state])
+            {
+                double q = 0.0f;
+                foreach (var t in transitionCache[(state, action)])
+                {
+                    q += t.Probability * (reward(t.State) + gamma * V[t.State]);
+                }
+                best = Math.Max(best, q);
+            }
+
+            return best;
+        }
+
+        static void ValueIteration(HashSet<GameState> states)
+        {
+            int iteration = 0;
+
+
+            while (true)
+            {
+                double delta = 0.0f;
+                var stopwatch = Stopwatch.StartNew();
+
+                Dictionary<GameState, double> tempV = new Dictionary<GameState, double>();
+                foreach (var s in states)
+                {
+                    double oldV = V[s];
+                    double newV = oldV;
+                    if (!isTerminal(s)) newV = BellmanUpdate(s);
+                    tempV[s] = newV;
+
+                    delta = Math.Max(delta, Math.Abs(oldV - newV));
+                }
+                V = tempV;
+
+                stopwatch.Stop();
+                iteration++;
+                Console.WriteLine($"Iteration:{iteration}, MaxDelta:{delta}, Elapsed Time: {stopwatch.ElapsedMilliseconds}");
+
+                if (delta < epsilon)
+                {
+                    numOfIter = iteration;
+                    break;
+                }
+            }
+
+
+        }
+
+        static int BestAction(GameState state)
+        {
+            double best = double.NegativeInfinity;
+            int bestAction = -1;
+
+            foreach (int action in actionCache[state])
+            {
+                double q = 0.0;
+
+                foreach (var t in transitionCache[(state, action)])
+                {
+                    q += t.Probability * (reward(t.State) + gamma * V[t.State]);
+                }
+                if (q > best)
+                {
+                    best = q;
+                    bestAction = action;
+                }
+            }
+            return bestAction;
+        }
+
+        static Dictionary<GameState, int> optimalPolicyGen(HashSet<GameState> allStates)
+        {
+            Dictionary<GameState, int> res = new Dictionary<GameState, int>();
+            foreach (var state in allStates)
+            {
+                res[state] = BestAction(state);
+            }
+            return res;
+        }
+
+        static Dictionary<GameState, int> bulletPolicyGen(HashSet<GameState> allStates)
+        {
+            Dictionary<GameState, int> res = new Dictionary<GameState, int>();
+            foreach (var state in allStates)
+            {
+                List<int> values = new List<int>();
+                foreach (var legal in legalActions(state))
+                {
+                    values.Add(legal);
+                }
+                res.Add(state, values.Max());
+            }
+            return res;
+        }
+
+        static Dictionary<GameState, int> raidPolicyGen(HashSet<GameState> allStates)
+        {
+            Dictionary<GameState, int> res = new Dictionary<GameState, int>();
+            foreach (var state in allStates)
+            {
+                List<int> values = new List<int>();
+                foreach (var legal in legalActions(state))
+                {
+                    values.Add(legal);
+                }
+                res.Add(state, values.Min());
+            }
+            return res;
+        }
+
+        static Dictionary<GameState, int> bulletPlusPolicyGen(HashSet<GameState> allStates)
+        {
+            Dictionary<GameState, int> res = new Dictionary<GameState, int>();
+
+            foreach (var state in allStates)
+            {
+                int d = state.Dice;
+                List<int> taking = new List<int>();
+
+                foreach (var legal in legalActions(state))
+                {
+                    // ignore null action
+                    if (legal < 0) continue;
+
+                    int myNext = Math.Min(state.MyFigs[legal] + d, p1.Length - 1);
+
+                    foreach (var enemy in state.OppFigs)
+                    {
+                        if (p1[myNext] == p2[enemy])
+                        {
+                            taking.Add(legal);
+                            break;
+                        }
+                    }
+                }
+
+                if (taking.Count > 0)
+                {
+                    res[state] = taking.Max();
+                }
+                else
+                {
+                    // fallback = normal bullet policy
+                    res[state] = legalActions(state).Max();
+                }
+            }
+
+            return res;
+        }
+
+        static Dictionary<GameState, int> raidPlusPolicyGen(HashSet<GameState> allStates)
+        {
+            Dictionary<GameState, int> res = new Dictionary<GameState, int>();
+
+            foreach (var state in allStates)
+            {
+                int d = state.Dice;
+                List<int> taking = new List<int>();
+
+                foreach (var legal in legalActions(state))
+                {
+                    if (legal < 0) continue;
+
+                    int myNext = Math.Min(state.MyFigs[legal] + d, p1.Length - 1);
+
+                    foreach (var enemy in state.OppFigs)
+                    {
+                        if (p1[myNext] == p2[enemy])
+                        {
+                            taking.Add(legal);
+                            break;
+                        }
+                    }
+                }
+
+                if (taking.Count > 0)
+                {
+                    res[state] = taking.Min();
+                }
+                else
+                {
+                    res[state] = legalActions(state).Max();
+                }
+            }
+
+            return res;
+        }
+
+        static double HeuristicScore(GameState state)
+        {
+            return state.MyFigs.Sum() - state.OppFigs.Sum();
+        }
+
+        static double HeuristicScoreSqrt(GameState state, string oper)
+        {
+            double sum = 0;
+
+            switch (oper)
+            {
+                case "sqrt":
+                    foreach (var fig in state.MyFigs)
+                    {
+                        sum += Math.Sqrt(fig / (double)(p1.Length - 1));
+                    }
+                    foreach (var fig in state.OppFigs)
+                    {
+                        sum -= Math.Sqrt(fig / (double)(p2.Length - 1));
+                    }
+                    break;
+                case "square":
+                    foreach (var fig in state.MyFigs)
+                    {
+                        sum += Math.Pow(fig / (double)(p1.Length - 1), 2);
+                    }
+                    foreach (var fig in state.OppFigs)
+                    {
+                        sum -= Math.Pow(fig / (double)(p2.Length - 1), 2);
+                    }
+                    break;
+                case "log":
+                    foreach (var fig in state.MyFigs)
+                    {
+                        // 1.442695040f = 1/ln(2)
+                        sum += Math.Log(((fig / (double)(p1.Length - 1)) + 1) * 1.442695040f);
+                    }
+                    foreach (var fig in state.OppFigs)
+                    {
+                        sum -= Math.Log(((fig / (double)(p1.Length - 1)) + 1) * 1.442695040f);
+                    }
+                    break;
+                case "exp":
+                    foreach (var fig in state.MyFigs)
+                    {
+                        // 0.69314718f = ln(2)
+                        sum += Math.Exp(((fig / (double)(p1.Length - 1)) * 0.69314718f) - 1);
+                    }
+                    foreach (var fig in state.OppFigs)
+                    {
+                        sum -= Math.Exp(((fig / (double)(p1.Length - 1)) * 0.69314718f) - 1);
+                    }
+                    break;
+                case "sin":
+                    foreach (var fig in state.MyFigs)
+                    {
+                        double xHalf = (fig / (double)(p1.Length - 1)) - 0.5f;
+                        sum += 0.5f + 1.570796326f * xHalf + 2.5838563900f * Math.Pow(xHalf, 3) + 1.2750820199f * Math.Pow(xHalf, 5);
+                    }
+                    foreach (var fig in state.OppFigs)
+                    {
+                        double xHalf = (fig / (double)(p1.Length - 1)) - 0.5f;
+                        sum -= 0.5f + 1.570796326f * xHalf + 2.5838563900f * Math.Pow(xHalf, 3) + 1.2750820199f * Math.Pow(xHalf, 5);
+                    }
+                    break;
+
+                default:
+                    Console.WriteLine("Defaulted");
+                    break;
+            }
+
+            return sum;
+        }
+
+        static Dictionary<GameState, int> scoreBasedPolicyGen(HashSet<GameState> allStates)
+        {
+            Dictionary<GameState, int> policy = new Dictionary<GameState, int>();
+
+
+            int iter = 0;
+            int count = allStates.Count;
+            foreach (var state in allStates)
+            {
+                // terminal states have no meaningful action
+                if (isTerminal(state))
+                {
+                    policy[state] = -1;
+                    continue;
+                }
+
+                double bestScore = double.NegativeInfinity;
+                int bestAction = -1;
+
+                foreach (int action in legalActions(state))
+                {
+                    double expectedScore = 0.0;
+
+                    foreach (var transition in nextStates(state, action))
+                    {
+                        expectedScore += transition.Probability * HeuristicScore(transition.State);
+                    }
+
+                    if (expectedScore > bestScore)
+                    {
+                        bestScore = expectedScore;
+                        bestAction = action;
+                    }
+                }
+
+                iter++;
+                if (iter % 10000 == 0)
+                {
+                    Console.WriteLine($"{100 * ((double)iter / (double)count)}%");
+                }
+
+                policy[state] = bestAction;
+            }
+
+            return policy;
+        }
+
+        static Dictionary<GameState, int> differentScoreBasedPolicyGen(HashSet<GameState> allStates, string operation)
+        {
+            Dictionary<GameState, int> policy = new Dictionary<GameState, int>();
+
+
+            int iter = 0;
+            int count = allStates.Count;
+            foreach (var state in allStates)
+            {
+                // terminal states have no meaningful action
+                if (isTerminal(state))
+                {
+                    policy[state] = -1;
+                    continue;
+                }
+
+                double bestScore = double.NegativeInfinity;
+                int bestAction = -1;
+
+                foreach (int action in legalActions(state))
+                {
+                    double expectedScore = 0.0;
+
+                    foreach (var transition in nextStates(state, action))
+                    {
+                        expectedScore += transition.Probability * HeuristicScoreSqrt(transition.State, operation);
+                    }
+
+                    if (expectedScore > bestScore)
+                    {
+                        bestScore = expectedScore;
+                        bestAction = action;
+                    }
+                }
+
+                iter++;
+                if (iter % 10000 == 0)
+                {
+                    Console.WriteLine($"{100 * ((double)iter / (double)count)}%");
+                }
+
+                policy[state] = bestAction;
+            }
+
+            return policy;
+        }
+
+        static List<Transition> opponentMinTransitions(GameState state)
+        {
+            List<int> legal = new List<int>();
+
+            for (int i = 0; i < state.OppFigs.Length; i++)
+            {
+                int current = Math.Min(state.OppFigs[i] + state.Dice, p2.Length - 1);
+                if (!(state.OppFigs.Contains(current) && current != p2.Length - 1)
+                    && state.OppFigs[i] != p2.Length - 1)
+                {
+                    legal.Add(i);
+                }
+            }
+
+            if (legal.Count == 0)
+            {
+                List<Transition> skip = new List<Transition>();
+                for (int d = 1; d <= diceSize; d++)
+                {
+                    skip.Add(new Transition(
+                        new GameState(state.MyFigs.ToArray(),
+                                      state.OppFigs.ToArray(),
+                                      d),
+                        1.0 / diceSize));
+                }
+                return skip;
+            }
+
+            double worstScore = double.PositiveInfinity;
+            List<GameState> worstStates = new List<GameState>();
+
+            foreach (int action in legal)
+            {
+                int[] newMy = state.MyFigs.ToArray();
+                int[] newOpp = state.OppFigs.ToArray();
+
+                newOpp[action] = Math.Min(state.OppFigs[action] + state.Dice, p2.Length - 1);
+
+                for (int i = 0; i < newMy.Length; i++)
+                    if (p1[newMy[i]] == p2[newOpp[action]])
+                        newMy[i] = 0;
+
+                Array.Sort(newMy);
+                Array.Sort(newOpp);
+
+                GameState afterMove = new GameState(newMy, newOpp, state.Dice);
+                double score = HeuristicScore(afterMove);
+
+                if (score < worstScore)
+                {
+                    worstScore = score;
+                    worstStates.Clear();
+                    worstStates.Add(afterMove);
+                }
+                else if (score == worstScore)
+                {
+                    worstStates.Add(afterMove);
+                }
+            }
+
+            List<Transition> result = new List<Transition>();
+            foreach (var s in worstStates)
+            {
+                for (int d = 1; d <= diceSize; d++)
+                {
+                    result.Add(new Transition(
+                        new GameState(s.MyFigs.ToArray(),
+                                      s.OppFigs.ToArray(),
+                                      d),
+                        1.0 / (diceSize * worstStates.Count)));
+                }
+            }
+
+            return result;
+        }
+
+
+        static double Expectiminimax(GameState state, int depth)
+        {
+            if (depth == 0 || isTerminal(state))
+                return HeuristicScore(state);
+
+            double best = double.NegativeInfinity;
+
+            foreach (int action in legalActions(state))
+            {
+                double expected = 0.0;
+
+                // Player move + dice
+                foreach (var t in nextStochastic(state, action))
+                {
+                    // Opponent MIN + dice
+                    foreach (var opp in opponentMinTransitions(t.State))
+                    {
+                        expected += t.Probability *
+                                    opp.Probability *
+                                    Expectiminimax(opp.State, depth - 1);
+                    }
+                }
+
+                best = Math.Max(best, expected);
+            }
+
+            return best;
+        }
+
+
+        static Dictionary<GameState, int> minimaxPolicyGen(HashSet<GameState> allStates, int depth)
+        {
+            Dictionary<GameState, int> policy = new Dictionary<GameState, int>();
+
+            int iter = 0;
+            int count = allStates.Count;
+            foreach (var state in allStates)
+            {
+
+                if (isTerminal(state))
+                {
+                    policy[state] = -1;
+                    continue;
+                }
+
+                double best = double.NegativeInfinity;
+                int bestAction = -1;
+
+                foreach (int action in legalActions(state))
+                {
+                    double expected = 0.0;
+
+                    foreach (var t in nextStochastic(state, action))
+                    {
+                        foreach (var opp in opponentMinTransitions(t.State))
+                        {
+                            expected += t.Probability *
+                                        opp.Probability *
+                                        Expectiminimax(opp.State, depth - 1);
+                        }
+                    }
+
+                    if (expected > best)
+                    {
+                        best = expected;
+                        bestAction = action;
+                    }
+                }
+
+                policy[state] = bestAction;
+                iter++;
+                if (iter % 10000 == 0)
+                {
+                    Console.WriteLine($"{100 * ((double)iter / (double)count)}%");
+                }
+
+            }
+
+            return policy;
+        }
+
+
+
+        static void PrintGameStateDictionary(Dictionary<GameState, int> dict)
+        {
+            foreach (var kvp in dict)
+            {
+                GameState state = kvp.Key;
+                int value = kvp.Value;
+                Console.WriteLine($"{state} => {value}");
+            }
+
+        }
+
+        static void SavePolicy(Dictionary<GameState, int> policy, string filePath)
+        {
+            // Convert GameState keys to string
+            var dictToSave = policy.ToDictionary(
+                kvp => kvp.Key.ToString(),  // string key
+                kvp => kvp.Value
+            );
+
+            // Serialize to JSON
+            var options = new JsonSerializerOptions { WriteIndented = true };
+            string json = JsonSerializer.Serialize(dictToSave, options);
+
+            File.WriteAllText(filePath, json);
+        }
+
+    }
+
+    public struct GameState : IEquatable<GameState>
+    {
+        // Inicializace potřebných proměnných
+        // Proměnné MyFigs a OppFigs obsahují pouze "imaginární" hodnotu pole,
+        // skutečné pole najdeme v array p1 nebo p2 jako p1[MyFigs[i]] nebo p2[OppFigs[i]]
+        public readonly ImmutableArray<int> MyFigs;
+        public readonly ImmutableArray<int> OppFigs;
+        public readonly int Dice;
+
+        public GameState(int[] myPieces, int[] oppPieces, int dice)
+        {
+            MyFigs = ImmutableArray.Create(myPieces).OrderBy(x => x).ToImmutableArray();
+            OppFigs = ImmutableArray.Create(oppPieces).OrderBy(x => x).ToImmutableArray();
+            Dice = dice;
+        }
+
+        //Porovnávání stavů
+        public bool Equals(GameState other)
+        {
+            return MyFigs.SequenceEqual(other.MyFigs)
+            && OppFigs.SequenceEqual(other.OppFigs)
+            && Dice == other.Dice;
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (obj is GameState other)
+                return Equals(other);
+            return false;
+        }
+
+        public override string ToString()
+        {
+            return $"[{string.Join(",", MyFigs)}];" +
+           $"[{string.Join(",", OppFigs)}];" +
+           $"{Dice}";
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                int hash = 17;
+                foreach (int p in MyFigs) hash = hash * 23 + p;
+                foreach (int p in OppFigs) hash = hash * 23 + p;
+                hash = hash * 23 + Dice;
+                return hash;
+            }
+        }
+    }
+
+    public struct Transition
+    {
+        public GameState State;
+        public double Probability;
+
+        public Transition(GameState state, double probability)
+        {
+            State = state;
+            Probability = probability;
+        }
+
+        public override string ToString()
+        {
+            return $"[{string.Join(",", State.MyFigs)}]," +
+            $"[{string.Join(",", State.OppFigs)}]," +
+            $"{State.Dice},Prob:{Probability}";
+        }
+    }
+}
