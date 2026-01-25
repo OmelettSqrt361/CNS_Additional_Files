@@ -275,7 +275,7 @@ namespace NaiveDomecekEnd
 
         static double reward(GameState state)
         {
-            if (state.MyFigs.ToArray() == new int[] { 21, 22 } && state.OppFigs.ToArray() == new int[] { 23, 24 })
+            if (state.MyFigs.ToArray() == new int[] { 21, 22 } && state.OppFigs.ToArray() == new int[] { 21, 22 })
             {
                 return 0;
             }
@@ -283,7 +283,7 @@ namespace NaiveDomecekEnd
             {
                 return 100;
             }
-            else if (state.OppFigs.ToArray() == new int[] { 23, 24 })
+            else if (state.OppFigs.ToArray() == new int[] { 21, 22 })
             {
                 return 100;
             }
@@ -296,7 +296,7 @@ namespace NaiveDomecekEnd
 
         static bool isTerminal(GameState state)
         {
-            return state.MyFigs.ToArray() == new int[] { 21, 22 } || state.OppFigs.ToArray() == new int[] { 23, 24 };
+            return state.MyFigs.ToArray() == new int[] { 21, 22 } || state.OppFigs.ToArray() == new int[] { 21, 22 };
         }
 
         static HashSet<GameState> searchAllAllStates(GameState start)

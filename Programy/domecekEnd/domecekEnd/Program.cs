@@ -209,26 +209,28 @@ namespace domecekEnd
 
         static double reward(GameState state)
         {
-            if (state.MyFigs.ToArray() == new int[] { 21, 22} && state.OppFigs.ToArray() == new int[] { 23, 24 })
+            
+            if (state.MyFigs.SequenceEqual(new[] { 21, 22 }) && state.OppFigs.SequenceEqual(new[] { 21, 22 }))
             {
                 return 0;
-            } else if (state.MyFigs.ToArray() == new int[] { 21, 22 })
+            } else if (state.MyFigs.SequenceEqual(new[] { 21, 22 }))
             {
-                return 100;
-            } else if (state.OppFigs.ToArray() == new int[] { 23, 24})
+                return 100*isMinimax;
+            } else if (state.OppFigs.SequenceEqual(new[] { 21, 22 }))
             {
-                return 100;
+                return -100*isMinimax;
             }
             else
             {
-                return 100;
+                return 0;
             }
 
         }
 
         static bool isTerminal(GameState state)
         {
-            return state.MyFigs.ToArray() == new int[] { 21, 22} || state.OppFigs.ToArray() == new int[] { 23, 24};
+            return state.MyFigs.SequenceEqual(new[] { 21, 22 }) ||
+                   state.OppFigs.SequenceEqual(new[] { 21, 22 });
         }
 
         static HashSet<GameState> searchAllAllStates(GameState start)
@@ -357,8 +359,9 @@ namespace domecekEnd
                         // Dice after opponent action
                         foreach (var oppT in OpponentTransitions(afterMyMove, oppAction))
                         {
-                            oppExpected += oppT.Probability *
-                                (reward(oppT.State) + gamma * V[oppT.State]);
+                            double r = reward(oppT.State);
+                            double v = isTerminal(oppT.State) ? 0.0 : gamma * V[oppT.State];
+                            oppExpected += oppT.Probability * (r + v);
                         }
 
                         worstOpponentValue = Math.Min(worstOpponentValue, oppExpected);
