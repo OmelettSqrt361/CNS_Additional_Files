@@ -15,8 +15,8 @@ namespace LudoTournament
         static int diceSize = 2;
         static int[] p1 = { 0, 1, 2, 3, 4, 5, 6 };
         static int[] p2 = { 8, 1, 2, 3, 4, 5, 7 };
-        static int numGamesPerPair = 10000;
-        static int iterThreshhold = 10000;
+        static int numGamesPerPair = 5;
+        static int iterThreshhold = 100000;
 
         static Random rnd = new Random();
 
