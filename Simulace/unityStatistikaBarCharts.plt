@@ -1,4 +1,6 @@
 set encoding utf8
+set terminal qt font "CMU Serif,12"
+unset output
 
 # Basic style
 set style data histograms

@@ -29,6 +29,7 @@ namespace PolicyComparator
             if (paths.Count < 2)
             {
                 Console.WriteLine("Need at least two policies.");
+                Console.ReadLine();
                 return;
             }
 
@@ -45,6 +46,7 @@ namespace PolicyComparator
                 catch (Exception ex)
                 {
                     Console.WriteLine($"Failed to load {path}: {ex.Message}");
+                    Console.ReadLine();
                     return;
                 }
             }
@@ -63,7 +65,7 @@ namespace PolicyComparator
                 foreach (string p2 in paths)
                 {
                     double similarity = ComputeSimilarity(policies[p1], policies[p2]);
-                    Console.Write($"{similarity:F3}\t");
+                    Console.Write($"{similarity:F5}\t");
                 }
 
                 Console.WriteLine();

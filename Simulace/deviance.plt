@@ -1,5 +1,5 @@
 set encoding utf8
-set terminal qt   # or: wxt
+set terminal qt font "CMU Serif,12"
 unset output
 
 set logscale x
@@ -17,3 +17,4 @@ set border linewidth 1.5
 plot \
     "deviance.dat" using 1:2:4 with filledcurves lc rgb "#4C72B0" title "Hranice", \
     "deviance.dat" using 1:3 with lines lw 2 lc rgb "#1f77b4" title "Průměr"
+
